@@ -10,12 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #12121c;
-            --bg-card: #1e1e2f;
+            --bg-dark: #1a1a2e;
+            --bg-card: #23233b;
             --text-primary: #e0e0e0;
             --text-secondary: #a0a0b0;
             --border-color: rgba(255, 255, 255, 0.1);
-            --accent-purple: #8e44ad;
+            --accent-purple: #9b59b6;
             --accent-blue: #3498db;
             --accent-green: #2ecc71;
             --accent-yellow: #f1c40f;
@@ -186,7 +186,7 @@
     <div class="container">
         <h1>AI Quant-Desk</h1>
         <p>Real-time market analysis powered by machine learning. Click a ticker below to view its detailed performance and AI-generated trading signal. 🟢 = BUY Signal, 🟡 = HOLD/SELL Signal.</p>
-        <div id="overview-grid"></div>
+        <div id="overview-grid" class="overview-grid"></div>
         
         <hr class="divider">
         
@@ -230,7 +230,7 @@
                     masterData = data;
                     renderOverview();
                     if (masterData.predictions && masterData.predictions.length > 0) {
-                        const firstTicker = masterData.predictions.sort((a,b) => a.Ticker.localeCompare(b.Ticker))[0].Ticker;
+                        const firstTicker = masterData.predictions[0].Ticker;
                         updateDetailView(firstTicker);
                     }
                 }).catch(error => {
@@ -240,8 +240,7 @@
 
             function renderOverview() {
                 overviewGrid.innerHTML = '';
-                const sortedPredictions = masterData.predictions.sort((a, b) => a.Ticker.localeCompare(b.Ticker));
-                sortedPredictions.forEach(p => {
+                masterData.predictions.forEach(p => {
                     const button = document.createElement('button');
                     button.className = 'ticker-button';
                     button.id = `btn-${p.Ticker}`;
@@ -254,9 +253,9 @@
 
             function updateDetailView(ticker) {
                 if (currentTicker) {
-                    document.getElementById(`btn-${currentTicker}`)?.classList.remove('active');
+                    document.getElementById(`btn-${currentTicker}`).classList.remove('active');
                 }
-                document.getElementById(`btn-${ticker}`)?.classList.add('active');
+                document.getElementById(`btn-${ticker}`).classList.add('active');
                 currentTicker = ticker;
                 
                 detailView.classList.add('visible');
@@ -269,34 +268,42 @@
                     predictionBox.className = prediction.Signal === 1 ? 'prediction-buy' : 'prediction-hold';
                 }
 
-                // Update Summary Table (Matches backtest_summary.csv columns)
+                // Update Summary Table
                 const summary = masterData.summary[ticker];
-                const statOrder = ["Return %", "Sharpe Ratio", "Max Drawdown %", "Win Rate %", "# Trades", "Buy & Hold %"];
-                
                 let summaryTableHTML = '<table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
                 if (summary) {
-                    statOrder.forEach(key => {
-                        if (summary[key] !== undefined) {
-                            let value = summary[key];
-                            let displayValue = (key === '# Trades') ? value.toFixed(0) : value.toFixed(2);
-                            summaryTableHTML += `<tr><td>${key}</td><td>${displayValue}</td></tr>`;
-                        }
-                    });
+                    for (const [key, value] of Object.entries(summary)) {
+                        summaryTableHTML += `<tr><td>${key}</td><td>${value.toFixed(2)}</td></tr>`;
+                    }
                 }
                 summaryTableHTML += '</tbody></table>';
                 summaryTable.innerHTML = summaryTableHTML;
 
                 // Update Price Chart
                 const history = masterData.priceHistory[ticker];
-                const trace = { x: history.map(d => d.Date), close: history.map(d => d.Close), high: history.map(d => d.High), low: history.map(d => d.Low), open: history.map(d => d.Open), type: 'candlestick', name: ticker, increasing: {line: {color: 'var(--accent-green)'}}, decreasing: {line: {color: '#e74c3c'}} };
-                const layout = { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)', font: { color: 'var(--text-primary)' }, xaxis: { rangeslider: { visible: false }, gridcolor: 'var(--border-color)' }, yaxis: { title: 'Price (USD)', gridcolor: 'var(--border-color)' }, margin: { l: 50, r: 20, b: 40, t: 20 }};
-                Plotly.newPlot(priceChart, [trace], layout, {responsive: true, displaylogo: false});
+                const trace = {
+                    x: history.map(d => d.Date),
+                    close: history.map(d => d.Close),
+                    high: history.map(d => d.High),
+                    low: history.map(d => d.Low),
+                    open: history.map(d => d.Open),
+                    type: 'candlestick',
+                    name: ticker
+                };
+                const layout = {
+                    paper_bgcolor: 'rgba(0,0,0,0)',
+                    plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: {
+                        color: 'var(--text-primary)'
+                    }
+                };
+                Plotly.newPlot(priceChart, [trace], layout, {responsive: true});
 
                 // Update Raw Data Table
-                const last5Days = history.slice(-5).reverse();
+                const last5Days = history.slice(-5);
                 let rawDataHTML = '<table><thead><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr></thead><tbody>';
                 last5Days.forEach(d => {
-                    rawDataHTML += `<tr><td>${d.Date}</td><td>${d.Open.toFixed(2)}</td><td>${d.High.toFixed(2)}</td><td>${d.Low.toFixed(2)}</td><td>${d.Close.toFixed(2)}</td><td>${(d.Volume / 1000000).toFixed(2)}M</td></tr>`;
+                    rawDataHTML += `<tr><td>${d.Date}</td><td>${d.Open.toFixed(2)}</td><td>${d.High.toFixed(2)}</td><td>${d.Low.toFixed(2)}</td><td>${d.Close.toFixed(2)}</td><td>${d.Volume}</td></tr>`;
                 });
                 rawDataHTML += '</tbody></table>';
                 rawDataTable.innerHTML = rawDataHTML;
