@@ -71,7 +71,7 @@
                 .then(data => {
                     masterData = data;
                     renderOverview();
-                    if (masterData.predictions && mastera.predictions.length > 0) {
+                    if (masterData.predictions && masterData.predictions.length > 0) {
                         updateDetailView(masterData.predictions.sort((a,b) => a.Ticker.localeCompare(b.Ticker))[0].Ticker);
                     }
                 }).catch(error => console.error('Error loading data.json:', error));
@@ -91,11 +91,6 @@
             }
 
             function updateDetailView(ticker) {
-                if (!masterData.summary[ticker]) {
-                    console.error(`No summary data found for ticker: ${ticker}`);
-                    return;
-                }
-
                 if (currentTicker) {
                     document.getElementById(`btn-${currentTicker}`).classList.remove('active');
                 }
@@ -112,38 +107,46 @@
                 }
 
                 // --- THE FIX IS HERE ---
-                // The keys in this array now EXACTLY match the keys in your data.json file.
+                // This list now matches the EXACT column names from backtest_summary.csv,
+                // ensuring all stats are displayed correctly.
                 const summary = masterData.summary[ticker];
-                const statOrder = ["Return [%]", "Sharpe Ratio", "Max. Drawdown [%]", "Win Rate [%]", "# Trades", "Buy & Hold Return [%]"];
+                const statOrder = [
+                    "Return %",
+                    "Sharpe Ratio",
+                    "Max Drawdown %",
+                    "Win Rate %",
+                    "# Trades",
+                    "Buy & Hold %"
+                ];
                 
                 let summaryTableHTML = '<table>';
-                statOrder.forEach(key => {
-                    if (summary.hasOwnProperty(key)) { // Check if the key actually exists
-                        let displayName = key.replace(' [%]', ' %');
-                        if (key === "# Trades") displayName = "Total Trades";
-                        
-                        summaryTableHTML += `<tr><td>${displayName}</td><td>${summary[key].toFixed(2)}</td></tr>`;
-                    }
-                });
+                if (summary) {
+                    statOrder.forEach(key => {
+                        if (summary[key] !== undefined) {
+                            let value = summary[key];
+                            // Format all numbers to 2 decimal places, except for '# Trades'
+                            let displayValue = (key === '# Trades') ? value.toFixed(0) : value.toFixed(2);
+                            summaryTableHTML += `<tr><td>${key}</td><td>${displayValue}</td></tr>`;
+                        }
+                    });
+                }
                 summaryTableHTML += '</table>';
                 summaryTable.innerHTML = summaryTableHTML;
 
                 // Update Price Chart
                 const history = masterData.priceHistory[ticker];
-                if (history) {
-                    const trace = { x: history.map(d => d.Date), close: history.map(d => d.Close), high: history.map(d => d.High), low: history.map(d => d.Low), open: history.map(d => d.Open), type: 'candlestick', name: ticker };
-                    const layout = { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: '#1a1a1a', font: { color: '#f0f0f0' }, xaxis: { rangeslider: { visible: false }, gridcolor: '#444' }, yaxis: { title: 'Price', gridcolor: '#444' } };
-                    Plotly.newPlot(priceChart, [trace], layout, {responsive: true});
+                const trace = { x: history.map(d => d.Date), close: history.map(d => d.Close), high: history.map(d => d.High), low: history.map(d => d.Low), open: history.map(d => d.Open), type: 'candlestick', name: ticker };
+                const layout = { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: '#1a1a1a', font: { color: '#f0f0f0' }, xaxis: { rangeslider: { visible: false }, gridcolor: '#444' }, yaxis: { title: 'Price', gridcolor: '#444' } };
+                Plotly.newPlot(priceChart, [trace], layout, {responsive: true});
 
-                    // Update Raw Data Table
-                    const last5Days = history.slice(-5).reverse();
-                    let rawDataHTML = '<table><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr>';
-                    last5Days.forEach(d => {
-                        rawDataHTML += `<tr><td>${d.Date}</td><td>${d.Open.toFixed(2)}</td><td>${d.High.toFixed(2)}</td><td>${d.Low.toFixed(2)}</td><td>${d.Close.toFixed(2)}</td><td>${(d.Volume / 1000000).toFixed(2)}M</td></tr>`;
-                    });
-                    rawDataHTML += '</table>';
-                    rawDataTable.innerHTML = rawDataHTML;
-                }
+                // Update Raw Data Table
+                const last5Days = history.slice(-5).reverse();
+                let rawDataHTML = '<table><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr>';
+                last5Days.forEach(d => {
+                    rawDataHTML += `<tr><td>${d.Date}</td><td>${d.Open.toFixed(2)}</td><td>${d.High.toFixed(2)}</td><td>${d.Low.toFixed(2)}</td><td>${d.Close.toFixed(2)}</td><td>${(d.Volume / 1000000).toFixed(2)}M</td></tr>`;
+                });
+                rawDataHTML += '</table>';
+                rawDataTable.innerHTML = rawDataHTML;
             }
         });
     </script>
