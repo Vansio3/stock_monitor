@@ -10,16 +10,15 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #1a1a2e;
-            --bg-card: #23233b;
+            --bg-dark: #121212;
+            --bg-card: #1e1e1e;
             --text-primary: #e0e0e0;
-            --text-secondary: #a0a0b0;
+            --text-secondary: #b3b3b3;
             --border-color: rgba(255, 255, 255, 0.1);
-            --accent-purple: #9b59b6;
-            --accent-blue: #3498db;
-            --accent-green: #2ecc71;
-            --accent-yellow: #f1c40f;
-            --shadow-color: rgba(0, 0, 0, 0.2);
+            --accent-color: #00aaff;
+            --accent-green: #28a745;
+            --accent-yellow: #ffc107;
+            --shadow-color: rgba(0, 0, 0, 0.4);
         }
 
         body { 
@@ -27,8 +26,8 @@
             background-color: var(--bg-dark); 
             color: var(--text-primary); 
             margin: 0; 
-            padding: 24px; 
-            line-height: 1.6;
+            padding: 16px; 
+            line-height: 1.5;
         }
 
         .container { 
@@ -39,61 +38,60 @@
         h1, h2 { 
             color: #ffffff; 
             font-weight: 600;
-            border-bottom: 2px solid var(--accent-purple); 
-            padding-bottom: 12px;
-            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color); 
+            padding-bottom: 8px;
+            margin-bottom: 16px;
         }
         
-        h1 { font-size: 2.2em; }
-        h2 { font-size: 1.5em; }
-        p { color: var(--text-secondary); }
+        h1 { font-size: 2em; }
+        h2 { font-size: 1.4em; }
+        p { color: var(--text-secondary); margin-bottom: 16px; }
 
         .overview-grid { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
-            gap: 16px; 
-            margin-top: 24px; 
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+            gap: 12px; 
+            margin-top: 16px; 
         }
 
         .ticker-button { 
             background-color: var(--bg-card); 
             color: var(--text-primary); 
             border: 1px solid var(--border-color); 
-            padding: 12px 16px; 
-            border-radius: 8px; 
+            padding: 8px 12px; 
+            border-radius: 6px; 
             cursor: pointer; 
             text-align: center; 
             font-weight: 600; 
-            font-size: 16px; 
-            transition: all 0.25s ease-in-out; 
-            box-shadow: 0 4px 6px var(--shadow-color);
+            font-size: 15px; 
+            transition: all 0.2s ease-in-out; 
+            box-shadow: 0 2px 4px var(--shadow-color);
         }
 
         .ticker-button:hover { 
-            background-color: #2a2a45; 
-            transform: translateY(-3px); 
-            box-shadow: 0 6px 12px var(--shadow-color);
-            border-color: var(--accent-blue);
+            background-color: #2a2a2a; 
+            transform: translateY(-2px); 
+            border-color: var(--accent-color);
         }
 
         .ticker-button.active { 
-            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
-            color: white;
-            border-color: var(--accent-blue);
-            transform: translateY(-2px) scale(1.03);
-            box-shadow: 0 5px 10px rgba(142, 68, 173, 0.4);
+            background: var(--accent-color);
+            color: var(--bg-dark);
+            border-color: var(--accent-color);
+            transform: translateY(-1px) scale(1.02);
+            box-shadow: 0 3px 6px rgba(0, 170, 255, 0.25);
         }
 
         .divider { 
             border: none;
             border-top: 1px solid var(--border-color);
-            margin: 48px 0; 
+            margin: 32px 0; 
         }
 
         #detail-view {
             opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s ease, transform 0.5s ease;
+            transform: translateY(15px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
         }
 
         #detail-view.visible {
@@ -103,61 +101,62 @@
 
         .detail-content { 
             display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 24px;
+            grid-template-columns: 1fr 2.5fr;
+            gap: 16px;
             align-items: flex-start;
         }
 
         .card {
             background-color: var(--bg-card);
             border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 10px var(--shadow-color);
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 5px var(--shadow-color);
         }
 
         .detail-stats { grid-column: 1 / 2; }
         .detail-chart { grid-column: 2 / 3; }
-        .raw-data-section { grid-column: 1 / -1; margin-top: 24px; }
+        .raw-data-section { grid-column: 1 / -1; margin-top: 16px; }
 
         #prediction-box { 
-            padding: 20px; 
-            border-radius: 8px; 
-            margin-bottom: 24px; 
+            padding: 16px; 
+            border-radius: 6px; 
+            margin-bottom: 16px; 
             font-weight: 600; 
             text-align: center; 
-            font-size: 1.3em;
-            color: white;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.4);
+            font-size: 1.15em;
+            text-shadow: none;
         }
 
         .prediction-buy { 
-            background: linear-gradient(135deg, #16a085, var(--accent-green));
+            background-color: rgba(40, 167, 69, 0.15);
             border: 1px solid var(--accent-green);
+            color: var(--accent-green);
         }
         .prediction-hold { 
-            background: linear-gradient(135deg, #d35400, var(--accent-yellow)); 
+            background-color: rgba(255, 193, 7, 0.15); 
             border: 1px solid var(--accent-yellow);
+            color: var(--accent-yellow);
         }
 
         table { 
             width: 100%; 
             border-collapse: collapse; 
-            margin-top: 16px;
+            margin-top: 12px;
+            font-size: 0.9em;
         }
 
         th, td { 
             text-align: left; 
-            padding: 14px 12px; 
+            padding: 10px 8px; 
             border-bottom: 1px solid var(--border-color);
-            font-size: 0.95em;
         }
 
         th { 
             font-weight: 600; 
             color: var(--text-secondary);
             text-transform: uppercase;
-            font-size: 0.8em;
+            font-size: 0.85em;
         }
 
         tr:last-child td {
@@ -177,6 +176,12 @@
         @media (max-width: 900px) {
             .detail-content {
                 grid-template-columns: 1fr;
+            }
+             body {
+                padding: 12px;
+            }
+            .overview-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
             }
         }
 
@@ -265,7 +270,7 @@
                 const prediction = masterData.predictions.find(p => p.Ticker === ticker);
                 if (prediction) {
                     predictionBox.innerHTML = `<div>Signal: ${prediction.Signal === 1 ? 'BUY' : 'HOLD / SELL'}</div><div>Confidence: ${(prediction.Confidence * 100).toFixed(2)}%</div>`;
-                    predictionBox.className = prediction.Signal === 1 ? 'prediction-buy' : 'prediction-hold';
+                    predictionBox.className = 'prediction-box ' + (prediction.Signal === 1 ? 'prediction-buy' : 'prediction-hold');
                 }
 
                 // Update Summary Table
@@ -288,19 +293,30 @@
                     low: history.map(d => d.Low),
                     open: history.map(d => d.Open),
                     type: 'candlestick',
-                    name: ticker
+                    name: ticker,
+                    increasing: {line: {color: 'var(--accent-green)'}}, 
+                    decreasing: {line: {color: '#e74c3c'}}
                 };
                 const layout = {
                     paper_bgcolor: 'rgba(0,0,0,0)',
                     plot_bgcolor: 'rgba(0,0,0,0)',
                     font: {
                         color: 'var(--text-primary)'
-                    }
+                    },
+                    xaxis: {
+                        gridcolor: 'var(--border-color)',
+                        zerolinecolor: 'var(--border-color)'
+                    },
+                    yaxis: {
+                        gridcolor: 'var(--border-color)',
+                        zerolinecolor: 'var(--border-color)'
+                    },
+                    margin: { l: 50, r: 20, t: 20, b: 40 }
                 };
                 Plotly.newPlot(priceChart, [trace], layout, {responsive: true});
 
                 // Update Raw Data Table
-                const last5Days = history.slice(-5);
+                const last5Days = history.slice(-5).reverse();
                 let rawDataHTML = '<table><thead><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr></thead><tbody>';
                 last5Days.forEach(d => {
                     rawDataHTML += `<tr><td>${d.Date}</td><td>${d.Open.toFixed(2)}</td><td>${d.High.toFixed(2)}</td><td>${d.Low.toFixed(2)}</td><td>${d.Close.toFixed(2)}</td><td>${d.Volume}</td></tr>`;
