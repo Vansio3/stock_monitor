@@ -1,0 +1,23 @@
+# Python virtual environment
+.venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# IDE / Editor specific files
+.vscode/
+
+models/
+stock_data/
+1_data_collector.py
+2_model_trainer.py
+3_dashboard.py
+4_backtester.py
+5_automated_backtest.py
+6_generate_predictions.py
+7_export_for_web.py
+AiStrategy.html
+backtest_summary.csv
+latest_predictions.csv
+
