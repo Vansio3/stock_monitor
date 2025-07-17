@@ -17,7 +17,7 @@
         .detail-content { display: flex; flex-wrap: wrap; gap: 40px; }
         .detail-stats { flex: 1; min-width: 300px; }
         .detail-chart { flex: 2; min-width: 400px; }
-        .raw-data-section { flex-basis: 100%; margin-top: 20px; } /* For the new data table */
+        .raw-data-section { flex-basis: 100%; margin-top: 20px; }
         #prediction-box { padding: 15px; border-radius: 5px; margin-bottom: 20px; font-weight: bold; text-align: center; font-size: 1.2em; }
         .prediction-buy { background-color: #2a572a; border: 1px solid #4CAF50; }
         .prediction-hold { background-color: #615d2a; border: 1px solid #d4c023; }
@@ -61,7 +61,7 @@
             const predictionBox = document.getElementById('prediction-box');
             const summaryTable = document.getElementById('summary-table');
             const priceChart = document.getElementById('price-chart');
-            const rawDataTable = document.getElementById('raw-data-table'); // New element
+            const rawDataTable = document.getElementById('raw-data-table');
 
             let masterData = {};
             let currentTicker = null;
@@ -72,7 +72,7 @@
                     masterData = data;
                     renderOverview();
                     if (masterData.predictions && masterData.predictions.length > 0) {
-                        updateDetailView(masterData.predictions[0].Ticker);
+                        updateDetailView(masterData.predictions.sort((a,b) => a.Ticker.localeCompare(b.Ticker))[0].Ticker);
                     }
                 }).catch(error => console.error('Error loading data.json:', error));
 
@@ -106,13 +106,18 @@
                     predictionBox.className = prediction.Signal === 1 ? 'prediction-buy' : 'prediction-hold';
                 }
 
-                // Update Summary Table
+                // --- THE FIX IS HERE ---
+                // This list now includes ALL the stats from your backtest summary.
                 const summary = masterData.summary[ticker];
                 const statOrder = ["Return [%]", "Sharpe Ratio", "Max. Drawdown [%]", "Win Rate [%]", "# Trades", "Buy & Hold Return [%]"];
+                
                 let summaryTableHTML = '<table>';
                 statOrder.forEach(key => {
                     if (summary[key] !== undefined) {
-                        summaryTableHTML += `<tr><td>${key.replace(' [%]', ' %')}</td><td>${summary[key].toFixed(2)}</td></tr>`;
+                        let displayName = key.replace(' [%]', ' %');
+                        if (key === "# Trades") displayName = "Total Trades"; // Make the label clearer
+                        
+                        summaryTableHTML += `<tr><td>${displayName}</td><td>${summary[key].toFixed(2)}</td></tr>`;
                     }
                 });
                 summaryTableHTML += '</table>';
@@ -128,7 +133,7 @@
                 const last5Days = history.slice(-5).reverse();
                 let rawDataHTML = '<table><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr>';
                 last5Days.forEach(d => {
-                    rawDataHTML += `<tr><td>${d.Date}</td><td>${d.Open.toFixed(2)}</td><td>${d.High.toFixed(2)}</td><td>${d.Low.toFixed(2)}</td><td>${d.Close.toFixed(2)}</td><td>${d.Volume.toLocaleString()}</td></tr>`;
+                    rawDataHTML += `<tr><td>${d.Date}</td><td>${d.Open.toFixed(2)}</td><td>${d.High.toFixed(2)}</td><td>${d.Low.toFixed(2)}</td><td>${d.Close.toFixed(2)}</td><td>${(d.Volume / 1000000).toFixed(2)}M</td></tr>`;
                 });
                 rawDataHTML += '</table>';
                 rawDataTable.innerHTML = rawDataHTML;
