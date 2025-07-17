@@ -11,9 +11,9 @@ __pycache__/
 models/
 stock_data/
 requirements.txt
-readme.md
 backtest_summary.csv
 latest_predictions.csv
+# readme.md
 # main.py
 # dashboard.py
 # 1_data_collector.py
