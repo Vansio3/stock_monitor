@@ -4,112 +4,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Quant-Desk</title>
-    <!-- Include the Plotly.js library for charting -->
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-
-    <!-- CSS Styles are now inside the HTML file -->
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #1a1a1a;
-            color: #f0f0f0;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: auto;
-        }
-        h1, h2 {
-            color: #ffffff;
-            border-bottom: 1px solid #444;
-            padding-bottom: 10px;
-        }
-        .overview-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 10px;
-            margin-top: 20px;
-        }
-        .ticker-button {
-            background-color: #333;
-            color: white;
-            border: 1px solid #555;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            text-align: center;
-            font-weight: bold;
-            font-size: 14px;
-            transition: background-color 0.2s, transform 0.1s;
-        }
-        .ticker-button:hover {
-            background-color: #4a4a4a;
-        }
-        .ticker-button.active {
-            background-color: #4CAF50;
-            border-color: #81C784;
-            transform: scale(1.05);
-        }
-        .divider {
-            border-color: #444;
-            margin: 40px 0;
-        }
-        .detail-content {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 40px;
-        }
-        .detail-stats {
-            flex: 1;
-            min-width: 300px;
-        }
-        .detail-chart {
-            flex: 2;
-            min-width: 400px;
-        }
-        #prediction-box {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-            font-weight: bold;
-            text-align: center;
-            font-size: 1.2em;
-        }
-        .prediction-buy {
-            background-color: #2a572a;
-            border: 1px solid #4CAF50;
-        }
-        .prediction-hold {
-            background-color: #615d2a;
-            border: 1px solid #d4c023;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            text-align: left;
-            padding: 10px;
-            border-bottom: 1px solid #444;
-        }
-        td:nth-child(2) {
-            text-align: right;
-            font-weight: bold;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #1a1a1a; color: #f0f0f0; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: auto; }
+        h1, h2 { color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 20px; }
+        .ticker-button { background-color: #333; color: white; border: 1px solid #555; padding: 10px; border-radius: 5px; cursor: pointer; text-align: center; font-weight: bold; font-size: 14px; transition: background-color 0.2s, transform 0.1s; }
+        .ticker-button:hover { background-color: #4a4a4a; }
+        .ticker-button.active { background-color: #4CAF50; border-color: #81C784; transform: scale(1.05); }
+        .divider { border-color: #444; margin: 40px 0; }
+        .detail-content { display: flex; flex-wrap: wrap; gap: 40px; }
+        .detail-stats { flex: 1; min-width: 300px; }
+        .detail-chart { flex: 2; min-width: 400px; }
+        .raw-data-section { flex-basis: 100%; margin-top: 20px; } /* For the new data table */
+        #prediction-box { padding: 15px; border-radius: 5px; margin-bottom: 20px; font-weight: bold; text-align: center; font-size: 1.2em; }
+        .prediction-buy { background-color: #2a572a; border: 1px solid #4CAF50; }
+        .prediction-hold { background-color: #615d2a; border: 1px solid #d4c023; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #444; }
+        th { font-weight: bold; }
+        td:nth-child(2) { text-align: right; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>AI Market Overview</h1>
         <p>Click on a ticker to see detailed analysis. 🟢 = BUY Signal, 🟡 = HOLD/SELL Signal.</p>
-        <div id="overview-grid" class="overview-grid">
-            <!-- Ticker buttons will be inserted here by JavaScript -->
-        </div>
-
+        <div id="overview-grid"></div>
         <hr class="divider">
-
-        <div id="detail-view" class="detail-view">
+        <div id="detail-view">
             <h1 id="detail-ticker">Select a ticker to begin</h1>
             <div class="detail-content">
                 <div class="detail-stats">
@@ -122,11 +46,14 @@
                     <h2>Price History (Last 1 Year)</h2>
                     <div id="price-chart"></div>
                 </div>
+                <div class="raw-data-section">
+                    <h2>Raw Data</h2>
+                    <div id="raw-data-table"></div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript logic is now inside the HTML file -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const overviewGrid = document.getElementById('overview-grid');
@@ -134,33 +61,24 @@
             const predictionBox = document.getElementById('prediction-box');
             const summaryTable = document.getElementById('summary-table');
             const priceChart = document.getElementById('price-chart');
+            const rawDataTable = document.getElementById('raw-data-table'); // New element
 
             let masterData = {};
             let currentTicker = null;
 
-            // Fetch the single data file
             fetch('data.json')
-                .then(response => {
-                    if (!response.ok) { throw new Error("Network response was not ok"); }
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
                     masterData = data;
                     renderOverview();
-                    // Show details for the first ticker by default
                     if (masterData.predictions && masterData.predictions.length > 0) {
                         updateDetailView(masterData.predictions[0].Ticker);
                     }
-                })
-                .catch(error => {
-                    console.error('Error fetching data.json:', error);
-                    overviewGrid.innerHTML = `<p style="color:red;">Error: Could not load data.json. Make sure the file exists and is in the same folder as this HTML file.</p>`;
-                });
+                }).catch(error => console.error('Error loading data.json:', error));
 
             function renderOverview() {
                 overviewGrid.innerHTML = '';
                 const sortedPredictions = masterData.predictions.sort((a, b) => a.Ticker.localeCompare(b.Ticker));
-                
                 sortedPredictions.forEach(p => {
                     const button = document.createElement('button');
                     button.className = 'ticker-button';
@@ -191,34 +109,29 @@
                 // Update Summary Table
                 const summary = masterData.summary[ticker];
                 const statOrder = ["Return [%]", "Sharpe Ratio", "Max. Drawdown [%]", "Win Rate [%]", "# Trades", "Buy & Hold Return [%]"];
-                let tableHTML = '<table>';
+                let summaryTableHTML = '<table>';
                 statOrder.forEach(key => {
                     if (summary[key] !== undefined) {
-                        tableHTML += `<tr><td>${key}</td><td>${summary[key].toFixed(2)}</td></tr>`;
+                        summaryTableHTML += `<tr><td>${key.replace(' [%]', ' %')}</td><td>${summary[key].toFixed(2)}</td></tr>`;
                     }
                 });
-                tableHTML += '</table>';
-                summaryTable.innerHTML = tableHTML;
+                summaryTableHTML += '</table>';
+                summaryTable.innerHTML = summaryTableHTML;
 
-                // Update Price Chart using Plotly.js
+                // Update Price Chart
                 const history = masterData.priceHistory[ticker];
-                const trace = {
-                    x: history.map(d => d.Date),
-                    close: history.map(d => d.Close),
-                    high: history.map(d => d.High),
-                    low: history.map(d => d.Low),
-                    open: history.map(d => d.Open),
-                    type: 'candlestick',
-                    name: ticker
-                };
-                const layout = {
-                    paper_bgcolor: 'rgba(0,0,0,0)',
-                    plot_bgcolor: '#1a1a1a',
-                    font: { color: '#f0f0f0' },
-                    xaxis: { rangeslider: { visible: false }, gridcolor: '#444' },
-                    yaxis: { title: 'Price', gridcolor: '#444' }
-                };
+                const trace = { x: history.map(d => d.Date), close: history.map(d => d.Close), high: history.map(d => d.High), low: history.map(d => d.Low), open: history.map(d => d.Open), type: 'candlestick', name: ticker };
+                const layout = { paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: '#1a1a1a', font: { color: '#f0f0f0' }, xaxis: { rangeslider: { visible: false }, gridcolor: '#444' }, yaxis: { title: 'Price', gridcolor: '#444' } };
                 Plotly.newPlot(priceChart, [trace], layout, {responsive: true});
+
+                // Update Raw Data Table
+                const last5Days = history.slice(-5).reverse();
+                let rawDataHTML = '<table><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr>';
+                last5Days.forEach(d => {
+                    rawDataHTML += `<tr><td>${d.Date}</td><td>${d.Open.toFixed(2)}</td><td>${d.High.toFixed(2)}</td><td>${d.Low.toFixed(2)}</td><td>${d.Close.toFixed(2)}</td><td>${d.Volume.toLocaleString()}</td></tr>`;
+                });
+                rawDataHTML += '</table>';
+                rawDataTable.innerHTML = rawDataHTML;
             }
         });
     </script>
