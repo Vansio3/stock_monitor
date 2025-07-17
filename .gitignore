@@ -10,14 +10,14 @@ __pycache__/
 
 models/
 stock_data/
+requirements.txt
+main.py
+dashboard.py
 1_data_collector.py
 2_model_trainer.py
-3_dashboard.py
-4_backtester.py
-5_automated_backtest.py
-6_generate_predictions.py
-7_export_for_web.py
-AiStrategy.html
+3_automated_backtest.py
+4_generate_predictions.py
+5_export_for_web.py
 backtest_summary.csv
 latest_predictions.csv
 
