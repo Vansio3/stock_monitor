@@ -11,9 +11,6 @@ python main.py
 This project is an advanced, end-to-end algorithmic trading pipeline. It automates data fetching, robust model training, and realistic backtesting to generate predictive trading signals. The entire system is designed to find a statistical edge in the market by leveraging sophisticated machine learning techniques and comprehensive feature engineering. All results are consolidated and displayed on a clean, interactive web dashboard.
 
 ---
-*Generated using the latest pipeline updates:*
-
----
 
 ## Quick Start
 
