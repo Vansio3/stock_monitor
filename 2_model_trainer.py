@@ -1,18 +1,22 @@
-# 2_model_trainer.py (UPDATED WITH TIER 2 IMPROVEMENTS & FIXES)
+# 2_model_trainer.py (UPGRADED WITH TIER 1 ACCURACY IMPROVEMENTS)
 
 import pandas as pd
 import pandas_ta as ta
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report
-from sklearn.model_selection import GridSearchCV
 import joblib
 import os
 import warnings
 
-# Suppress ConvergenceWarning from scikit-learn, which can be noisy during grid search
+# --- TIER 1 UPGRADE: Import new libraries ---
+import lightgbm as lgb
+from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
+from sklearn.metrics import classification_report
 from sklearn.exceptions import ConvergenceWarning
+
+# Suppress warnings for a cleaner output
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
+warnings.filterwarnings("ignore", category=UserWarning, module='lightgbm')
+
 
 # --- Settings ---
 try:
@@ -22,15 +26,16 @@ except FileNotFoundError:
     TICKERS = []
 
 TARGET_DAYS_AHEAD = 5
-VOLATILITY_MULTIPLIER = 1.5 
+VOLATILITY_MULTIPLIER = 1.5
 MODELS_DIR = "models"
 TEST_SET_PERCENTAGE = 0.2
 
 # --- Code ---
 def train_all_models():
     """
-    Loops through all tickers, engineers advanced features, finds the best hyperparameters,
-    trains a model, evaluates it, saves the model AND its feature order/importances.
+    Loops through all tickers, engineers features, finds best hyperparameters using a
+    more robust Time-Series cross-validation, trains a superior LightGBM model,
+    evaluates it, and saves the model with its metadata.
     """
     if not TICKERS:
         print("No stock data found to train on. Exiting.")
@@ -52,8 +57,8 @@ def train_all_models():
     except FileNotFoundError:
         print("Warning: SPY.csv not found. Market context features will be skipped.")
         market_features = None
-    
-    print(f"Found data for {len(TICKERS)} stocks. Starting advanced training...")
+
+    print(f"Found data for {len(TICKERS)} stocks. Starting advanced training with Tier 1 upgrades...")
 
     features_list = [
         'RSI_14', 'MACD_12_26_9', 'MACDh_12_26_9', 'MACDs_12_26_9',
@@ -61,13 +66,13 @@ def train_all_models():
         'STOCHk_14_3_3', 'STOCHd_14_3_3', 'OBV', 'ADX_14', 'WILLR_14',
         'RSI_change_1d', 'MACD_change_1d',
         'SPY_pct_change', 'SPY_RSI_14', 'SPY_RSI_change_1d',
-        'volatility', 'CMF_20', 'above_200_sma' # CMF_20 is the default name from pandas-ta
+        'volatility', 'CMF_20', 'above_200_sma'
     ]
 
     for ticker in TICKERS:
         if ticker == 'SPY':
             continue
-            
+
         print(f"--- Processing {ticker} ---")
 
         try:
@@ -76,7 +81,7 @@ def train_all_models():
             print(f"Data for {ticker} not found, skipping.")
             continue
 
-        # --- ADVANCED FEATURE ENGINEERING ---
+        # --- FEATURE ENGINEERING (Unchanged) ---
         df.ta.rsi(append=True)
         df.ta.macd(append=True)
         df.ta.bbands(length=20, append=True)
@@ -97,48 +102,42 @@ def train_all_models():
         df['future_price'] = df['Close'].shift(-TARGET_DAYS_AHEAD)
         df['price_change'] = (df['future_price'] - df['Close'])
         dynamic_threshold = df['ATRr_14'] / 100 * df['Close'] * VOLATILITY_MULTIPLIER
-
-        conditions = [
-            df['price_change'] > dynamic_threshold,
-            df['price_change'] < -dynamic_threshold,
-        ]
-        choices = [2, 0]
-        df['target'] = np.select(conditions, choices, default=1)
+        
+        conditions = [df['price_change'] > dynamic_threshold, df['price_change'] < -dynamic_threshold]
+        choices = [2, 0] # Buy, Sell
+        df['target'] = np.select(conditions, choices, default=1) # Hold
         
         df.dropna(inplace=True)
         
         final_features = [f for f in features_list if f in df.columns]
-        missing_features = set(features_list) - set(final_features)
-        if missing_features:
-            print(f"Warning: Missing features for {ticker}, they will be excluded: {missing_features}")
-
         X = df[final_features]
         y = df['target']
 
-        if len(X) < 50 or y.nunique() < 2:
-            print(f"Not enough data or outcome variability for {ticker}, skipping.")
+        if len(X) < 100 or y.nunique() < 2: # Increased minimum size for robust splitting
+            print(f"Not enough data or outcome variability for {ticker} for robust training, skipping.")
             continue
 
         split_index = int(len(X) * (1 - TEST_SET_PERCENTAGE))
         X_train, X_test = X[:split_index], X[split_index:]
         y_train, y_test = y[:split_index], y[split_index:]
 
-        print(f"Starting hyperparameter search for {ticker}...")
-        param_grid = {
-            'n_estimators': [100, 200], 'max_depth': [10, 20, None],
-            'min_samples_leaf': [2, 4], 'max_features': ['sqrt', 'log2'],
-        }
-        rf = RandomForestClassifier(random_state=42)
+        # --- TIER 1 UPGRADE: Use LightGBM and a suitable hyperparameter grid ---
+        print(f"Starting hyperparameter search for {ticker} with LightGBM...")
+        lgbm = lgb.LGBMClassifier(random_state=42, verbose=-1) # verbose=-1 suppresses native output
         
-        cv_splits = 3
-        if y_train.value_counts().min() < cv_splits:
-             cv_splits = y_train.value_counts().min()
+        param_grid = {
+            'n_estimators': [100, 200, 300],
+            'learning_rate': [0.05, 0.1],
+            'num_leaves': [20, 31, 40],
+        }
 
-        if cv_splits < 2:
-            print(f"Cannot perform cross-validation for {ticker} due to extreme class imbalance. Skipping.")
-            continue
+        # --- TIER 1 UPGRADE: Use TimeSeriesSplit for cross-validation ---
+        # This is FAR more robust for financial data than standard k-fold CV.
+        # It creates folds by taking a block of past data for training and the
+        # immediately following block for validation, simulating real-world usage.
+        tscv = TimeSeriesSplit(n_splits=5)
 
-        grid_search = GridSearchCV(estimator=rf, param_grid=param_grid, cv=cv_splits, scoring='f1_weighted', n_jobs=-1, verbose=0)
+        grid_search = GridSearchCV(estimator=lgbm, param_grid=param_grid, cv=tscv, scoring='f1_weighted', n_jobs=-1, verbose=1)
         grid_search.fit(X_train, y_train)
 
         model = grid_search.best_estimator_
@@ -148,16 +147,15 @@ def train_all_models():
         print(f"\n--- Evaluation Report for {ticker} (Test Set) ---")
         target_names = ['Sell (0)', 'Hold (1)', 'Buy (2)']
         
+        # Use zero_division=0 to prevent warnings when a class has no predictions
         print(classification_report(y_test, predictions, target_names=target_names, labels=[0, 1, 2], zero_division=0))
 
         importances = pd.Series(model.feature_importances_, index=final_features)
         importances = importances.sort_values(ascending=False)
         
-        # --- THE KEY FIX ---
-        # Save the model, the exact feature order, and the sorted importances
         model_payload = {
             'model': model,
-            'feature_order': final_features,  # THIS IS THE CRITICAL FIX
+            'feature_order': final_features,
             'feature_importances': importances.to_dict()
         }
         model_path = os.path.join(MODELS_DIR, f"{ticker}_model.pkl")
