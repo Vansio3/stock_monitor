@@ -43,115 +43,86 @@
         h2 { font-size: 1.4em; }
         p { color: var(--text-secondary); margin-bottom: 16px; }
 
-        .overview-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-            gap: 12px; 
-            margin-top: 16px; 
-        }
-
-        .ticker-button { 
-            background-color: var(--bg-card); 
-            color: var(--text-primary); 
-            border: 1px solid var(--border-color); 
-            padding: 8px 12px; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            text-align: center; 
-            font-weight: 600; 
-            font-size: 15px; 
-            transition: all 0.2s ease-in-out; 
-            box-shadow: 0 2px 4px var(--shadow-color);
-        }
-        .ticker-button:hover { 
-            background-color: #2a2a2a; 
-            transform: translateY(-2px); 
-            border-color: var(--accent-color);
-        }
-        .ticker-button.active { 
-            background: var(--accent-color);
-            color: var(--bg-dark);
-            border-color: var(--accent-color);
-            transform: translateY(-1px) scale(1.02);
-            box-shadow: 0 3px 6px rgba(0, 170, 255, 0.25);
-        }
+        .overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 16px; }
+        .ticker-button { background-color: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; cursor: pointer; text-align: center; font-weight: 600; font-size: 15px; transition: all 0.2s ease-in-out; box-shadow: 0 2px 4px var(--shadow-color); }
+        .ticker-button:hover { background-color: #2a2a2a; transform: translateY(-2px); border-color: var(--accent-color); }
+        .ticker-button.active { background: var(--accent-color); color: var(--bg-dark); border-color: var(--accent-color); transform: translateY(-1px) scale(1.02); box-shadow: 0 3px 6px rgba(0, 170, 255, 0.25); }
         .divider { border: none; border-top: 1px solid var(--border-color); margin: 32px 0; }
         #detail-view { opacity: 0; transform: translateY(15px); transition: opacity 0.4s ease, transform 0.4s ease; }
         #detail-view.visible { opacity: 1; transform: translateY(0); }
-        .detail-content { display: grid; grid-template-columns: 1fr 2.5fr; gap: 16px; align-items: flex-start; }
-        .card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; box-shadow: 0 2px 5px var(--shadow-color); }
-        .detail-stats { grid-column: 1 / 2; display: flex; flex-direction: column; gap: 16px;}
-        .detail-chart { grid-column: 2 / 3; }
-        .raw-data-section { grid-column: 1 / -1; margin-top: 16px; }
 
+        /* --- LAYOUT CHANGE: This is the new container for the top row --- */
+        .top-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive 3-column layout */
+            gap: 16px;
+            margin-bottom: 16px; /* Space between top row and chart below */
+        }
+        
+        .card { 
+            background-color: var(--bg-card); 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; padding: 16px; 
+            box-shadow: 0 2px 5px var(--shadow-color); 
+            display: flex; /* Helps ensure cards have same height if content differs */
+            flex-direction: column;
+        }
+        
         #prediction-box { padding: 16px; border-radius: 6px; margin-bottom: 0; font-weight: 600; text-align: center; font-size: 1.15em; }
         .prediction-buy { background-color: rgba(40, 167, 69, 0.15); border: 1px solid var(--accent-green); color: var(--accent-green); }
         .prediction-hold { background-color: rgba(255, 193, 7, 0.15); border: 1px solid var(--accent-yellow); color: var(--accent-yellow); }
         .prediction-sell { background-color: rgba(231, 76, 60, 0.15); border: 1px solid var(--accent-red); color: var(--accent-red); }
 
-        table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-top: auto; /* Pushes table to bottom of card */ }
         th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border-color); }
         th { font-weight: 600; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85em; }
         tr:last-child td { border-bottom: none; }
         td:nth-child(2) { text-align: right; font-weight: 600; color: var(--text-primary); }
 
-        /*** TIER 2: STYLE FOR FEATURE IMPORTANCE PROGRESS BAR ***/
-        .feature-importance-bar {
-            background-color: var(--accent-color);
-            height: 100%;
-            border-radius: 3px;
-            opacity: 0.7;
-        }
-        .feature-importance-bg {
-            background-color: #333;
-            border-radius: 3px;
-            height: 8px;
-            width: 80px; /* fixed width for alignment */
-        }
-        td.feature-bar-cell {
-            text-align: left;
-        }
+        .feature-importance-bar { background-color: var(--accent-color); height: 100%; border-radius: 3px; opacity: 0.7; }
+        .feature-importance-bg { background-color: #333; border-radius: 3px; height: 8px; width: 80px; }
+        td.feature-bar-cell { text-align: left; }
 
-        @media (max-width: 900px) {
-            .detail-content { grid-template-columns: 1fr; }
-            body { padding: 12px; }
-            .overview-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
-        }
+        .tooltip-container { position: relative; cursor: help; border-bottom: 1px dotted var(--text-secondary); }
+        .tooltip-container::after { content: attr(data-tooltip); position: absolute; bottom: 125%; left: 50%; transform: translateX(-50%); background-color: #333; color: var(--text-primary); padding: 8px 12px; border-radius: 6px; font-size: 0.85em; font-weight: 400; line-height: 1.4; text-align: left; white-space: pre-wrap; z-index: 10; opacity: 0; visibility: hidden; transition: opacity 0.2s, visibility 0.2s; width: 250px; box-shadow: 0 4px 8px rgba(0,0,0,0.5); border: 1px solid var(--border-color); }
+        .tooltip-container:hover::after { opacity: 1; visibility: visible; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>AI Quant-Desk</h1>
-        <p>Advanced market analysis powered by machine learning. This tool uses dynamic volatility targets and robust feature engineering. Click a ticker to view its detailed performance, AI signal, and the key indicators driving its decisions. 🟢 = BUY, 🔴 = SELL, 🟡 = HOLD.</p>
+        <p>Advanced market analysis powered by machine learning. This tool uses dynamic volatility targets and robust feature engineering. Hover over metric names for a detailed explanation. 🟢 = BUY, 🔴 = SELL, 🟡 = HOLD.</p>
         <div id="overview-grid" class="overview-grid"></div>
         <hr class="divider">
         <div id="detail-view">
             <h1 id="detail-ticker">Select a ticker to begin</h1>
-            <div class="detail-content">
-                <div class="detail-stats">
-                    <div class="card">
-                        <h2>AI Prediction</h2>
-                        <div id="prediction-box">Loading...</div>
-                    </div>
-                    <!-- TIER 2: NEW CARD FOR MODEL EXPLAINABILITY -->
-                    <div class="card">
-                        <h2>Model Drivers</h2>
-                        <div id="feature-importance-table"></div>
-                    </div>
-                    <div class="card">
-                        <h2>Strategy Performance</h2>
-                        <div id="summary-table"></div>
-                    </div>
+            
+            <!-- --- LAYOUT CHANGE: The three top cards are now wrapped in this grid container --- -->
+            <div class="top-stats-grid">
+                <div class="card">
+                    <h2>AI Prediction</h2>
+                    <div id="prediction-box">Loading...</div>
                 </div>
-                <div class="detail-chart card">
-                    <h2>Price History (1Y)</h2>
-                    <div id="price-chart"></div>
+                <div class="card">
+                    <h2>Model Drivers</h2>
+                    <div id="feature-importance-table"></div>
                 </div>
-                <div class="raw-data-section card">
-                    <h2>Recent Market Data</h2>
-                    <div id="raw-data-table"></div>
+                <div class="card">
+                    <h2>Strategy Performance</h2>
+                    <div id="summary-table"></div>
                 </div>
             </div>
+            
+            <!-- These cards are now outside the top grid and will appear on their own row below -->
+            <div class="card" style="margin-bottom: 16px;">
+                <h2>Price History (1Y)</h2>
+                <div id="price-chart"></div>
+            </div>
+            <div class="card">
+                <h2>Recent Market Data</h2>
+                <div id="raw-data-table"></div>
+            </div>
+
         </div>
     </div>
 
@@ -164,7 +135,7 @@
             const summaryTable = document.getElementById('summary-table');
             const priceChart = document.getElementById('price-chart');
             const rawDataTable = document.getElementById('raw-data-table');
-            const featureImportanceTable = document.getElementById('feature-importance-table'); // TIER 2
+            const featureImportanceTable = document.getElementById('feature-importance-table');
 
             let masterData = {};
             let currentTicker = null;
@@ -175,8 +146,41 @@
                 0: { text: 'SELL', emoji: '🔴', className: 'prediction-sell' }
             };
 
+            const hintGlossary = {
+                'Return %': "The total profit or loss of the AI strategy over the entire backtest period, shown as a percentage.",
+                'Buy & Hold %': "The profit or loss you would have made by simply buying the stock on day one and selling on the last day, without any AI trades.",
+                'Sharpe Ratio': "Measures the strategy's return compared to its risk. A higher Sharpe Ratio (typically > 1) is better, indicating more return for each unit of risk taken.",
+                'Max Drawdown %': "The largest peak-to-trough drop in the strategy's value. This shows the biggest loss from a single high point, indicating potential risk.",
+                'Win Rate %': "The percentage of trades that were closed with a profit. A high win rate doesn't guarantee high profit, but it shows consistency.",
+                '# Trades': "The total number of trades (buy/sell pairs) the AI strategy executed during the backtest period.",
+                'RSI_14': "Relative Strength Index (14-day). A momentum indicator measuring if a stock is overbought (typically >70) or oversold (typically <30).",
+                'MACD_12_26_9': "Moving Average Convergence Divergence. Shows the relationship between two moving averages. Used to spot changes in momentum, direction, and trend strength.",
+                'MACDh_12_26_9': "MACD Histogram. Visualizes the distance between the MACD line and its signal line. A growing histogram suggests strengthening momentum.",
+                'MACDs_12_26_9': "MACD Signal Line. A 9-day moving average of the MACD line itself, used to generate buy/sell signals when crossed.",
+                'BBL_20_2.0': "Lower Bollinger Band. A line two standard deviations below a 20-day moving average. Prices near or below this band may be oversold.",
+                'BBM_20_2.0': "Middle Bollinger Band. A simple 20-day moving average of the price, representing the medium-term trend.",
+                'BBU_20_2.0': "Upper Bollinger Band. A line two standard deviations above a 20-day moving average. Prices near or above this band may be overbought.",
+                'ATRr_14': "Average True Range (14-day). A key measure of market volatility. It shows the average price range over 14 days.",
+                'STOCHk_14_3_3': "Stochastic Oscillator (%K). Compares a closing price to its price range over a period. Helps identify overbought/oversold conditions.",
+                'STOCHd_14_3_3': "Stochastic Oscillator Signal Line (%D). A moving average of the %K line, used to smooth it out and generate signals.",
+                'OBV': "On-Balance Volume. A momentum indicator that uses volume flow to predict price changes. Rising OBV can indicate positive price pressure.",
+                'ADX_14': "Average Directional Index (14-day). Measures the strength of a trend, not its direction. A high ADX (typically >25) indicates a strong trend (either up or down).",
+                'WILLR_14': "Williams %R (14-day). A momentum indicator that works similarly to the Stochastic Oscillator to identify overbought/oversold levels.",
+                'RSI_change_1d': "1-Day Change in RSI. Measures the speed and acceleration of RSI momentum.",
+                'MACD_change_1d': "1-Day Change in MACD. Measures the speed and acceleration of MACD momentum.",
+                'SPY_pct_change': "S&P 500 (Market) Daily Change. The percentage change of the SPY ETF, used to see if the stock is moving with or against the overall market.",
+                'SPY_RSI_14': "S&P 500 (Market) RSI. The RSI of the overall market, giving context to whether the market as a whole is overbought or oversold.",
+                'SPY_RSI_change_1d': "1-Day Change in Market RSI. Measures the momentum of the entire market.",
+                'volatility': "Historical Volatility. A measure of how much the stock's price has fluctuated recently. Higher volatility means higher risk and potential reward.",
+                'CMF_20': "Chaikin Money Flow (20-day). Measures the amount of money flowing into or out of a stock. Positive values suggest buying pressure; negative values suggest selling pressure.",
+                'above_200_sma': "Above 200-Day SMA? A simple but powerful trend filter. A value of 1 means the stock is in a long-term uptrend (price is above its 200-day average); 0 means it's not.",
+            };
+
             fetch('data.json')
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return response.json();
+                })
                 .then(data => {
                     masterData = data;
                     renderOverview();
@@ -220,32 +224,30 @@
                 }
 
                 const summary = masterData.summary[ticker];
-                if (!summary) return; // Exit if no summary data
+                if (!summary) return;
 
-                // Update Summary Table (excluding feature importances)
                 let summaryTableHTML = '<table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
                 for (const [key, value] of Object.entries(summary)) {
                     if (key !== 'feature_importances') {
-                        const formattedValue = typeof value === 'number' ? value.toFixed(2) : value;
-                        summaryTableHTML += `<tr><td>${key}</td><td>${formattedValue}</td></tr>`;
+                        const hintText = hintGlossary[key] || '';
+                        const formattedValue = value !== null && typeof value === 'number' ? value.toFixed(2) : (value === null ? 'N/A' : value);
+                        summaryTableHTML += `<tr><td><span class="tooltip-container" data-tooltip="${hintText}">${key}</span></td><td>${formattedValue}</td></tr>`;
                     }
                 }
                 summaryTableHTML += '</tbody></table>';
                 summaryTable.innerHTML = summaryTableHTML;
 
-                // TIER 2: Update Feature Importance Table
                 let featureTableHTML = '<table><thead><tr><th>Indicator</th><th>Importance</th></tr></thead><tbody>';
                 const importances = summary.feature_importances;
                 if (importances && Object.keys(importances).length > 0) {
-                    // Convert to array, sort, and take top 5
-                    const sortedFeatures = Object.entries(importances).sort(([,a],[,b]) => b-a).slice(0, 5);
+                    const sortedFeatures = Object.entries(importances).sort(([,a],[,b]) => b-a).slice(0, 7);
                     const maxImportance = sortedFeatures.length > 0 ? sortedFeatures[0][1] : 1;
-
                     sortedFeatures.forEach(([feature, value]) => {
                         const barWidth = (value / maxImportance) * 100;
+                        const hintText = hintGlossary[feature] || '';
                         featureTableHTML += `
                             <tr>
-                                <td>${feature}</td>
+                                <td><span class="tooltip-container" data-tooltip="${hintText}">${feature}</span></td>
                                 <td class="feature-bar-cell">
                                     <div class="feature-importance-bg">
                                         <div class="feature-importance-bar" style="width: ${barWidth}%;"></div>
@@ -259,7 +261,6 @@
                 }
                 featureTableHTML += '</tbody></table>';
                 featureImportanceTable.innerHTML = featureTableHTML;
-
 
                 const history = masterData.priceHistory[ticker];
                 if (!history) {
@@ -290,7 +291,7 @@
                 const last5Days = history.slice(-5).reverse();
                 let rawDataHTML = '<table><thead><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr></thead><tbody>';
                 last5Days.forEach(d => {
-                    rawDataHTML += `<tr><td>${d.Date}</td><td>${d.Open.toFixed(2)}</td><td>${d.High.toFixed(2)}</td><td>${d.Low.toFixed(2)}</td><td>${d.Close.toFixed(2)}</td><td>${d.Volume}</td></tr>`;
+                    rawDataHTML += `<tr><td>${d.Date}</td><td>${d.Open.toFixed(2)}</td><td>${d.High.toFixed(2)}</td><td>${d.Low.toFixed(2)}</td><td>${d.Close.toFixed(2)}</td><td>${d.Volume.toLocaleString()}</td></tr>`;
                 });
                 rawDataHTML += '</tbody></table>';
                 rawDataTable.innerHTML = rawDataHTML;
