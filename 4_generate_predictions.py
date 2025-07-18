@@ -1,4 +1,4 @@
-# 4_generate_predictions.py (UPDATED FOR TIER 2 FEATURES AND FIX)
+# 4_generate_predictions.py (UPDATED FOR TIER 1 FEATURES AND FIX)
 
 import pandas as pd
 import pandas_ta as ta
@@ -38,14 +38,11 @@ def generate_all_predictions():
         try:
             model_payload = joblib.load(f"models/{ticker}_model.pkl")
             model = model_payload['model']
-            
-            # --- THE KEY FIX ---
-            # Load the guaranteed correct feature order
             feature_order = model_payload['feature_order']
 
             df = pd.read_csv(f"stock_data/{ticker}.csv", index_col="Date", parse_dates=True)
 
-            # --- CALCULATE ALL THE SAME FEATURES AS IN TRAINING ---
+            # --- CALCULATE ALL THE SAME FEATURES AS IN TRAINING (WITH TIER 1) ---
             df.ta.rsi(append=True)
             df.ta.macd(append=True)
             df.ta.bbands(length=20, append=True)
@@ -54,17 +51,23 @@ def generate_all_predictions():
             df.ta.obv(append=True)
             df.ta.adx(append=True)
             df.ta.willr(append=True)
+            df.ta.cmf(high=df['High'], low=df['Low'], close=df['Close'], volume=df['Volume'], append=True)
+            df.ta.roc(length=21, append=True) # New: Rate of Change
             df['RSI_change_1d'] = df['RSI_14'].diff()
             df['MACD_change_1d'] = df['MACD_12_26_9'].diff()
             df['volatility'] = df['Close'].pct_change().rolling(window=5).std() * np.sqrt(5)
-            df.ta.cmf(high=df['High'], low=df['Low'], close=df['Close'], volume=df['Volume'], append=True)
-            df['above_200_sma'] = (df['Close'] > df.ta.sma(200)).astype(int)
+            
+            # New: Trend and Mean Reversion Features
+            sma50 = df.ta.sma(50)
+            sma200 = df.ta.sma(200)
+            df['above_200_sma'] = (df['Close'] > sma200).astype(int)
+            df['sma_trend_strength'] = (sma50 > sma200).astype(int)
+            df['distance_from_sma_200'] = (df['Close'] - sma200) / sma200
+            df['RSI_volatility'] = df['RSI_14'].rolling(window=20).std()
 
             if market_features is not None:
                 df = df.join(market_features)
             
-            # --- THE KEY FIX ---
-            # Use the correct feature order to select data for prediction
             latest_data = df.iloc[-1:][feature_order]
 
             if latest_data.isnull().values.any():

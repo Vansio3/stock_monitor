@@ -17,27 +17,27 @@ TICKERS = [
     "INTC",  # Intel
     "AMD",   # Advanced Micro Devices
 
-    # # --- Top Tech & Cloud ---
-    # "TSLA",  # Tesla
-    # "AAPL",  # Apple
-    # "CRM",   # Salesforce
-    # "ORCL",  # Oracle
-    # "ADBE",  # Adobe
+    # --- Top Tech & Cloud ---
+    "TSLA",  # Tesla
+    "AAPL",  # Apple
+    "CRM",   # Salesforce
+    "ORCL",  # Oracle
+    "ADBE",  # Adobe
 
-    # # --- Semiconductors ---
-    # "TSM",   # Taiwan Semiconductor
-    # "AVGO",  # Broadcom
-    # "QCOM",  # Qualcomm
-    # "TXN",   # Texas Instruments
+    # --- Semiconductors ---
+    "TSM",   # Taiwan Semiconductor
+    "AVGO",  # Broadcom
+    "QCOM",  # Qualcomm
+    "TXN",   # Texas Instruments
 
-    # # --- Top Finance & Banking ---
-    # "JPM",   # JPMorgan Chase
-    # "V",     # Visa
-    # "MA",    # Mastercard
-    # "BAC",   # Bank of America
-    # "GS",    # Goldman Sachs
-    # "MS",    # Morgan Stanley
-    # "BLK",   # BlackRock
+    # --- Top Finance & Banking ---
+    "JPM",   # JPMorgan Chase
+    "V",     # Visa
+    "MA",    # Mastercard
+    "BAC",   # Bank of America
+    "GS",    # Goldman Sachs
+    "MS",    # Morgan Stanley
+    "BLK",   # BlackRock
 ]
 PERIOD = "5y" 
 DATA_DIR = "stock_data"

@@ -63,13 +63,16 @@ def train_all_models():
 
     print(f"Found data for {len(TICKERS)} stocks. Starting advanced training...")
 
+    # --- NEW: Updated feature list with Tier 1 additions ---
     features_list = [
         'RSI_14', 'MACD_12_26_9', 'MACDh_12_26_9', 'MACDs_12_26_9',
         'BBL_20_2.0', 'BBM_20_2.0', 'BBU_20_2.0', 'ATRr_14',
         'STOCHk_14_3_3', 'STOCHd_14_3_3', 'OBV', 'ADX_14', 'WILLR_14',
         'RSI_change_1d', 'MACD_change_1d',
         'SPY_pct_change', 'SPY_RSI_14', 'SPY_RSI_change_1d',
-        'volatility', 'CMF_20', 'above_200_sma'
+        'volatility', 'CMF_20', 'above_200_sma',
+        # --- Tier 1 Additions ---
+        'sma_trend_strength', 'distance_from_sma_200', 'RSI_volatility', 'ROC_21'
     ]
 
     for ticker in TICKERS:
@@ -84,7 +87,7 @@ def train_all_models():
             print(f"Data for {ticker} not found, skipping.")
             continue
 
-        # --- FEATURE ENGINEERING ---
+        # --- FEATURE ENGINEERING (WITH TIER 1 ADDITIONS) ---
         df.ta.rsi(append=True)
         df.ta.macd(append=True)
         df.ta.bbands(length=20, append=True)
@@ -93,53 +96,66 @@ def train_all_models():
         df.ta.obv(append=True)
         df.ta.adx(append=True)
         df.ta.willr(append=True)
+        df.ta.cmf(high=df['High'], low=df['Low'], close=df['Close'], volume=df['Volume'], append=True)
+        df.ta.roc(length=21, append=True) # New: Rate of Change
         df['RSI_change_1d'] = df['RSI_14'].diff()
         df['MACD_change_1d'] = df['MACD_12_26_9'].diff()
         df['volatility'] = df['Close'].pct_change().rolling(window=TARGET_DAYS_AHEAD).std() * np.sqrt(TARGET_DAYS_AHEAD)
-        df.ta.cmf(high=df['High'], low=df['Low'], close=df['Close'], volume=df['Volume'], append=True)
-        df['above_200_sma'] = (df['Close'] > df.ta.sma(200)).astype(int)
+        
+        # New: Trend and Mean Reversion Features
+        sma50 = df.ta.sma(50)
+        sma200 = df.ta.sma(200)
+        df['above_200_sma'] = (df['Close'] > sma200).astype(int)
+        df['sma_trend_strength'] = (sma50 > sma200).astype(int)
+        df['distance_from_sma_200'] = (df['Close'] - sma200) / sma200
+        df['RSI_volatility'] = df['RSI_14'].rolling(window=20).std()
 
         if market_features is not None:
             df = df.join(market_features)
 
-        # --- ROBUST QUANTILE-BASED TARGET LABELING ---
-        # Calculate the future return over the TARGET_DAYS_AHEAD period.
+        # --- ROBUST, LEAK-FREE LABELING (TIER 1 FIX) ---
+        # 1. Calculate future returns first
         df['future_return'] = df['Close'].pct_change(TARGET_DAYS_AHEAD).shift(-TARGET_DAYS_AHEAD)
 
-        # Calculate the quantile thresholds on the entire dataset's future returns
-        # This makes the labels adaptive to each stock's unique volatility profile.
-        buy_threshold = df['future_return'].quantile(BUY_QUANTILE)
-        sell_threshold = df['future_return'].quantile(SELL_QUANTILE)
-        
-        print(f"Labeling thresholds for {ticker}: Sell < {sell_threshold:.4f}, Buy > {buy_threshold:.4f}")
-
-        conditions = [
-            df['future_return'] > buy_threshold,  # If future return is in the top 20%, it's a "Buy"
-            df['future_return'] < sell_threshold, # If future return is in the bottom 20%, it's a "Sell"
-        ]
-        choices = [2, 0] # 2 for Buy, 0 for Sell
-        df['target'] = np.select(conditions, choices, default=1) # 1 for Hold (the middle 60%)
-        
-        # Check the distribution of the generated labels to confirm it worked
-        print(f"Label distribution for {ticker}:\n{df['target'].value_counts(normalize=True)}")
-
+        # 2. Drop NaNs created by indicators and future return calculation
         df.dropna(inplace=True)
 
+        # 3. Define the chronological split point
+        split_index = int(len(df) * (1 - TEST_SET_PERCENTAGE))
+        
+        # 4. Calculate quantile thresholds ONLY from the training data's returns
+        # This prevents data leakage from the test set.
+        train_returns = df['future_return'].iloc[:split_index]
+        buy_threshold = train_returns.quantile(BUY_QUANTILE)
+        sell_threshold = train_returns.quantile(SELL_QUANTILE)
+        
+        print(f"Labeling thresholds for {ticker} (from training data): Sell < {sell_threshold:.4f}, Buy > {buy_threshold:.4f}")
+
+        # 5. Apply these fixed thresholds to the entire dataset to create labels
+        conditions = [
+            df['future_return'] > buy_threshold,
+            df['future_return'] < sell_threshold,
+        ]
+        choices = [2, 0] # 2 for Buy, 0 for Sell
+        df['target'] = np.select(conditions, choices, default=1) # 1 for Hold
+        
+        print(f"Label distribution for {ticker}:\n{df['target'].value_counts(normalize=True)}")
+
+        # --- PREPARE DATA FOR MODELING ---
         final_features = [f for f in features_list if f in df.columns]
         X = df[final_features]
         y = df['target']
 
         if len(X) < 100:
-            print(f"Not enough data for {ticker} after feature generation, skipping.")
+            print(f"Not enough data for {ticker} after processing, skipping.")
             continue
-
-        split_index = int(len(X) * (1 - TEST_SET_PERCENTAGE))
-        X_train, X_test = X[:split_index], X[split_index:]
-        y_train, y_test = y[:split_index], y[split_index:]
+        
+        # Split using the same index as before
+        X_train, X_test = X.iloc[:split_index], X.iloc[split_index:]
+        y_train, y_test = y.iloc[:split_index], y.iloc[split_index:]
 
         # --- MODEL TRAINING & HYPERPARAMETER TUNING ---
         print(f"Starting hyperparameter search for {ticker} with LightGBM...")
-        # Use class_weight='balanced' to handle the natural imbalance in labels
         lgbm = lgb.LGBMClassifier(random_state=42, verbose=-1, class_weight='balanced')
         
         param_grid = {
@@ -148,9 +164,7 @@ def train_all_models():
             'num_leaves': [20, 31, 40],
         }
 
-        # Use TimeSeriesSplit for robust, chronologically-aware cross-validation
         tscv = TimeSeriesSplit(n_splits=5)
-
         grid_search = GridSearchCV(estimator=lgbm, param_grid=param_grid, cv=tscv, scoring='f1_weighted', n_jobs=-1, verbose=1)
         grid_search.fit(X_train, y_train)
 
@@ -161,7 +175,6 @@ def train_all_models():
         predictions = model.predict(X_test)
         print(f"\n--- Evaluation Report for {ticker} (Test Set) ---")
         target_names = ['Sell (0)', 'Hold (1)', 'Buy (2)']
-        
         print(classification_report(y_test, predictions, target_names=target_names, labels=[0, 1, 2], zero_division=0))
 
         # --- SAVE MODEL AND METADATA ---
