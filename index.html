@@ -18,7 +18,6 @@
             --accent-color: #00aaff;
             --accent-green: #28a745;
             --accent-yellow: #ffc107;
-            /*** TIER 1: ADD A RED ACCENT FOR SELL SIGNALS ***/
             --accent-red: #e74c3c;
             --shadow-color: rgba(0, 0, 0, 0.4);
         }
@@ -32,11 +31,7 @@
             line-height: 1.5;
         }
 
-        .container { 
-            max-width: 1400px; 
-            margin: auto; 
-        }
-
+        .container { max-width: 1400px; margin: auto; }
         h1, h2 { 
             color: #ffffff; 
             font-weight: 600;
@@ -44,7 +39,6 @@
             padding-bottom: 8px;
             margin-bottom: 16px;
         }
-        
         h1 { font-size: 2em; }
         h2 { font-size: 1.4em; }
         p { color: var(--text-secondary); margin-bottom: 16px; }
@@ -69,13 +63,11 @@
             transition: all 0.2s ease-in-out; 
             box-shadow: 0 2px 4px var(--shadow-color);
         }
-
         .ticker-button:hover { 
             background-color: #2a2a2a; 
             transform: translateY(-2px); 
             border-color: var(--accent-color);
         }
-
         .ticker-button.active { 
             background: var(--accent-color);
             color: var(--bg-dark);
@@ -83,134 +75,73 @@
             transform: translateY(-1px) scale(1.02);
             box-shadow: 0 3px 6px rgba(0, 170, 255, 0.25);
         }
-
-        .divider { 
-            border: none;
-            border-top: 1px solid var(--border-color);
-            margin: 32px 0; 
-        }
-
-        #detail-view {
-            opacity: 0;
-            transform: translateY(15px);
-            transition: opacity 0.4s ease, transform 0.4s ease;
-        }
-
-        #detail-view.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .detail-content { 
-            display: grid;
-            grid-template-columns: 1fr 2.5fr;
-            gap: 16px;
-            align-items: flex-start;
-        }
-
-        .card {
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            box-shadow: 0 2px 5px var(--shadow-color);
-        }
-
-        .detail-stats { grid-column: 1 / 2; }
+        .divider { border: none; border-top: 1px solid var(--border-color); margin: 32px 0; }
+        #detail-view { opacity: 0; transform: translateY(15px); transition: opacity 0.4s ease, transform 0.4s ease; }
+        #detail-view.visible { opacity: 1; transform: translateY(0); }
+        .detail-content { display: grid; grid-template-columns: 1fr 2.5fr; gap: 16px; align-items: flex-start; }
+        .card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; box-shadow: 0 2px 5px var(--shadow-color); }
+        .detail-stats { grid-column: 1 / 2; display: flex; flex-direction: column; gap: 16px;}
         .detail-chart { grid-column: 2 / 3; }
         .raw-data-section { grid-column: 1 / -1; margin-top: 16px; }
 
-        #prediction-box { 
-            padding: 16px; 
-            border-radius: 6px; 
-            margin-bottom: 16px; 
-            font-weight: 600; 
-            text-align: center; 
-            font-size: 1.15em;
-            text-shadow: none;
+        #prediction-box { padding: 16px; border-radius: 6px; margin-bottom: 0; font-weight: 600; text-align: center; font-size: 1.15em; }
+        .prediction-buy { background-color: rgba(40, 167, 69, 0.15); border: 1px solid var(--accent-green); color: var(--accent-green); }
+        .prediction-hold { background-color: rgba(255, 193, 7, 0.15); border: 1px solid var(--accent-yellow); color: var(--accent-yellow); }
+        .prediction-sell { background-color: rgba(231, 76, 60, 0.15); border: 1px solid var(--accent-red); color: var(--accent-red); }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+        th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border-color); }
+        th { font-weight: 600; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85em; }
+        tr:last-child td { border-bottom: none; }
+        td:nth-child(2) { text-align: right; font-weight: 600; color: var(--text-primary); }
+
+        /*** TIER 2: STYLE FOR FEATURE IMPORTANCE PROGRESS BAR ***/
+        .feature-importance-bar {
+            background-color: var(--accent-color);
+            height: 100%;
+            border-radius: 3px;
+            opacity: 0.7;
+        }
+        .feature-importance-bg {
+            background-color: #333;
+            border-radius: 3px;
+            height: 8px;
+            width: 80px; /* fixed width for alignment */
+        }
+        td.feature-bar-cell {
+            text-align: left;
         }
 
-        .prediction-buy { 
-            background-color: rgba(40, 167, 69, 0.15);
-            border: 1px solid var(--accent-green);
-            color: var(--accent-green);
-        }
-        .prediction-hold { 
-            background-color: rgba(255, 193, 7, 0.15); 
-            border: 1px solid var(--accent-yellow);
-            color: var(--accent-yellow);
-        }
-        /*** TIER 1: ADD STYLE FOR SELL PREDICTION BOX ***/
-        .prediction-sell { 
-            background-color: rgba(231, 76, 60, 0.15);
-            border: 1px solid var(--accent-red);
-            color: var(--accent-red);
-        }
-
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 12px;
-            font-size: 0.9em;
-        }
-
-        th, td { 
-            text-align: left; 
-            padding: 10px 8px; 
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        th { 
-            font-weight: 600; 
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            font-size: 0.85em;
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        tr:hover {
-            background-color: rgba(255, 255, 255, 0.03);
-        }
-
-        td:nth-child(2) { 
-            text-align: right; 
-            font-weight: 600; 
-            color: var(--text-primary);
-        }
-        
         @media (max-width: 900px) {
-            .detail-content {
-                grid-template-columns: 1fr;
-            }
-             body {
-                padding: 12px;
-            }
-            .overview-grid {
-                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            }
+            .detail-content { grid-template-columns: 1fr; }
+            body { padding: 12px; }
+            .overview-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
         }
-
     </style>
 </head>
 <body>
     <div class="container">
         <h1>AI Quant-Desk</h1>
-        <p>Real-time market analysis powered by machine learning. Click a ticker below to view its detailed performance and AI-generated trading signal. 🟢 = BUY, 🔴 = SELL, 🟡 = HOLD.</p>
+        <p>Advanced market analysis powered by machine learning. This tool uses dynamic volatility targets and robust feature engineering. Click a ticker to view its detailed performance, AI signal, and the key indicators driving its decisions. 🟢 = BUY, 🔴 = SELL, 🟡 = HOLD.</p>
         <div id="overview-grid" class="overview-grid"></div>
-        
         <hr class="divider">
-        
         <div id="detail-view">
             <h1 id="detail-ticker">Select a ticker to begin</h1>
             <div class="detail-content">
-                <div class="detail-stats card">
-                    <h2>AI Prediction</h2>
-                    <div id="prediction-box">Loading...</div>
-                    <h2>Strategy Performance</h2>
-                    <div id="summary-table"></div>
+                <div class="detail-stats">
+                    <div class="card">
+                        <h2>AI Prediction</h2>
+                        <div id="prediction-box">Loading...</div>
+                    </div>
+                    <!-- TIER 2: NEW CARD FOR MODEL EXPLAINABILITY -->
+                    <div class="card">
+                        <h2>Model Drivers</h2>
+                        <div id="feature-importance-table"></div>
+                    </div>
+                    <div class="card">
+                        <h2>Strategy Performance</h2>
+                        <div id="summary-table"></div>
+                    </div>
                 </div>
                 <div class="detail-chart card">
                     <h2>Price History (1Y)</h2>
@@ -233,11 +164,11 @@
             const summaryTable = document.getElementById('summary-table');
             const priceChart = document.getElementById('price-chart');
             const rawDataTable = document.getElementById('raw-data-table');
+            const featureImportanceTable = document.getElementById('feature-importance-table'); // TIER 2
 
             let masterData = {};
             let currentTicker = null;
             
-            /*** TIER 1: Map signals to human-readable text and CSS classes ***/
             const signalMap = {
                 2: { text: 'BUY', emoji: '🟢', className: 'prediction-buy' },
                 1: { text: 'HOLD', emoji: '🟡', className: 'prediction-hold' },
@@ -264,7 +195,6 @@
                     const button = document.createElement('button');
                     button.className = 'ticker-button';
                     button.id = `btn-${p.Ticker}`;
-                    /*** TIER 1: Use the signal map for correct emoji ***/
                     const signalInfo = signalMap[p.Signal] || { emoji: '❓' };
                     button.textContent = `${signalInfo.emoji} ${p.Ticker}`;
                     button.onclick = () => updateDetailView(p.Ticker);
@@ -282,21 +212,20 @@
                 detailView.classList.add('visible');
                 detailTicker.textContent = `Detailed Analysis: ${ticker}`;
 
-                // Update Prediction
                 const prediction = masterData.predictions.find(p => p.Ticker === ticker);
                 if (prediction) {
-                    /*** TIER 1: Update prediction box with 3-class logic ***/
                     const signalInfo = signalMap[prediction.Signal] || { text: 'UNKNOWN', className: '' };
                     predictionBox.innerHTML = `<div>Signal: ${signalInfo.text}</div><div>Confidence: ${(prediction.Confidence * 100).toFixed(2)}%</div>`;
                     predictionBox.className = `prediction-box ${signalInfo.className}`;
                 }
 
-                // Update Summary Table
                 const summary = masterData.summary[ticker];
+                if (!summary) return; // Exit if no summary data
+
+                // Update Summary Table (excluding feature importances)
                 let summaryTableHTML = '<table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
-                if (summary) {
-                    for (const [key, value] of Object.entries(summary)) {
-                        // Use toFixed(2) for numbers, but allow non-numeric values too
+                for (const [key, value] of Object.entries(summary)) {
+                    if (key !== 'feature_importances') {
                         const formattedValue = typeof value === 'number' ? value.toFixed(2) : value;
                         summaryTableHTML += `<tr><td>${key}</td><td>${formattedValue}</td></tr>`;
                     }
@@ -304,12 +233,39 @@
                 summaryTableHTML += '</tbody></table>';
                 summaryTable.innerHTML = summaryTableHTML;
 
-                // Update Price Chart
+                // TIER 2: Update Feature Importance Table
+                let featureTableHTML = '<table><thead><tr><th>Indicator</th><th>Importance</th></tr></thead><tbody>';
+                const importances = summary.feature_importances;
+                if (importances && Object.keys(importances).length > 0) {
+                    // Convert to array, sort, and take top 5
+                    const sortedFeatures = Object.entries(importances).sort(([,a],[,b]) => b-a).slice(0, 5);
+                    const maxImportance = sortedFeatures.length > 0 ? sortedFeatures[0][1] : 1;
+
+                    sortedFeatures.forEach(([feature, value]) => {
+                        const barWidth = (value / maxImportance) * 100;
+                        featureTableHTML += `
+                            <tr>
+                                <td>${feature}</td>
+                                <td class="feature-bar-cell">
+                                    <div class="feature-importance-bg">
+                                        <div class="feature-importance-bar" style="width: ${barWidth}%;"></div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    featureTableHTML += '<tr><td colspan="2">No feature data available.</td></tr>';
+                }
+                featureTableHTML += '</tbody></table>';
+                featureImportanceTable.innerHTML = featureTableHTML;
+
+
                 const history = masterData.priceHistory[ticker];
                 if (!history) {
                     priceChart.innerHTML = "No price history found for this ticker.";
                     rawDataTable.innerHTML = "";
-                    return; // Stop if no history
+                    return;
                 }
                 
                 const trace = {
@@ -318,30 +274,19 @@
                     high: history.map(d => d.High),
                     low: history.map(d => d.Low),
                     open: history.map(d => d.Open),
-                    type: 'candlestick',
-                    name: ticker,
+                    type: 'candlestick', name: ticker,
                     increasing: {line: {color: 'var(--accent-green)'}}, 
                     decreasing: {line: {color: 'var(--accent-red)'}}
                 };
                 const layout = {
-                    paper_bgcolor: 'rgba(0,0,0,0)',
-                    plot_bgcolor: 'rgba(0,0,0,0)',
-                    font: {
-                        color: 'var(--text-primary)'
-                    },
-                    xaxis: {
-                        gridcolor: 'var(--border-color)',
-                        zerolinecolor: 'var(--border-color)'
-                    },
-                    yaxis: {
-                        gridcolor: 'var(--border-color)',
-                        zerolinecolor: 'var(--border-color)'
-                    },
+                    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+                    font: { color: 'var(--text-primary)' },
+                    xaxis: { gridcolor: 'var(--border-color)', zerolinecolor: 'var(--border-color)' },
+                    yaxis: { gridcolor: 'var(--border-color)', zerolinecolor: 'var(--border-color)' },
                     margin: { l: 50, r: 20, t: 20, b: 40 }
                 };
                 Plotly.newPlot(priceChart, [trace], layout, {responsive: true});
 
-                // Update Raw Data Table
                 const last5Days = history.slice(-5).reverse();
                 let rawDataHTML = '<table><thead><tr><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th></tr></thead><tbody>';
                 last5Days.forEach(d => {

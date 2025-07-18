@@ -1,13 +1,14 @@
-# 5_export_for_web.py (Corrected)
+# 5_export_for_web.py (UPDATED FOR TIER 2: FEATURE IMPORTANCES)
 
 import pandas as pd
 import json
 import os
+import joblib
 
 def export_data_for_web():
     """
-    Consolidates all necessary data into a single data.json file
-    for the static website to use.
+    Consolidates predictions, backtest summary, price history, and now
+    feature importances into a single data.json file for the website.
     """
     print("Starting data export for web...")
 
@@ -16,27 +17,35 @@ def export_data_for_web():
         summary_df = pd.read_csv("backtest_summary.csv")
     except FileNotFoundError as e:
         print(f"Error: Missing a required CSV file. {e}")
-        print("Please run '5_automated_backtest.py' and '6_generate_predictions.py' first.")
         return
 
     predictions_dict = predictions_df.to_dict(orient='records')
     summary_dict = summary_df.set_index('Ticker').to_dict(orient='index')
 
+    ### TIER 2: LOAD AND ADD FEATURE IMPORTANCES ###
+    print("Loading feature importances from models...")
+    model_files = os.listdir('models')
+    for ticker_model_file in model_files:
+        if ticker_model_file.endswith('.pkl'):
+            ticker = ticker_model_file.replace('_model.pkl', '')
+            if ticker in summary_dict:
+                try:
+                    payload = joblib.load(f"models/{ticker_model_file}")
+                    # Add the importances to this ticker's summary data
+                    summary_dict[ticker]['feature_importances'] = payload.get('feature_importances', {})
+                except Exception as e:
+                    print(f"Could not load feature importances for {ticker}: {e}")
+
+    # Process price history
     price_history = {}
     stock_files = os.listdir('stock_data')
     for ticker_file in stock_files:
         if ticker_file.endswith('.csv'):
             ticker = ticker_file.split('.')[0]
             df = pd.read_csv(f"stock_data/{ticker_file}")
-            
             df['Date'] = pd.to_datetime(df['Date'])
             df = df[df['Date'] > (pd.Timestamp.now() - pd.DateOffset(years=1))]
-            
-            # --- THE FIX IS HERE ---
-            # Convert the 'Date' column from Timestamp objects to simple strings
-            # in the format 'YYYY-MM-DD'.
             df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
-            
             price_history[ticker] = df.to_dict(orient='records')
 
     final_data = {
@@ -48,8 +57,7 @@ def export_data_for_web():
     with open('data.json', 'w') as f:
         json.dump(final_data, f, indent=2)
 
-    print("\nSuccessfully exported all data to 'data.json'.")
-    print("This file is now ready to be deployed with your static website.")
+    print("\nSuccessfully exported all data (including feature importances) to 'data.json'.")
 
 if __name__ == "__main__":
     export_data_for_web()
