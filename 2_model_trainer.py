@@ -123,7 +123,7 @@ def train_all_models():
 
         # --- TIER 1 UPGRADE: Use LightGBM and a suitable hyperparameter grid ---
         print(f"Starting hyperparameter search for {ticker} with LightGBM...")
-        lgbm = lgb.LGBMClassifier(random_state=42, verbose=-1) # verbose=-1 suppresses native output
+        lgbm = lgb.LGBMClassifier(random_state=42, verbose=-1, class_weight='balanced')
         
         param_grid = {
             'n_estimators': [100, 200, 300],

@@ -8,34 +8,36 @@ import os
 TICKERS = [
     ### TIER 1: ADD MARKET BENCHMARK ###
     "SPY",   # S&P 500 ETF - Market Benchmark
-    # --- Top Tech & Cloud ---
+    # --- Chosen Tickers ---
     "GOOGL", # Google
-    "TSLA",  # Tesla
     "MSFT",  # Microsoft
     "META",  # Meta Platforms
     "AMZN",  # Amazon
-    "AAPL",  # Apple
-    "CRM",   # Salesforce
-    "ORCL",  # Oracle
-    "ADBE",  # Adobe
-
-    # --- Semiconductors ---
     "NVDA",  # Nvidia
-    "TSM",   # Taiwan Semiconductor
-    "AVGO",  # Broadcom
-    "AMD",   # Advanced Micro Devices
-    "QCOM",  # Qualcomm
     "INTC",  # Intel
-    "TXN",   # Texas Instruments
+    "AMD",   # Advanced Micro Devices
 
-    # --- Top Finance & Banking ---
-    "JPM",   # JPMorgan Chase
-    "V",     # Visa
-    "MA",    # Mastercard
-    "BAC",   # Bank of America
-    "GS",    # Goldman Sachs
-    "MS",    # Morgan Stanley
-    "BLK",   # BlackRock
+    # # --- Top Tech & Cloud ---
+    # "TSLA",  # Tesla
+    # "AAPL",  # Apple
+    # "CRM",   # Salesforce
+    # "ORCL",  # Oracle
+    # "ADBE",  # Adobe
+
+    # # --- Semiconductors ---
+    # "TSM",   # Taiwan Semiconductor
+    # "AVGO",  # Broadcom
+    # "QCOM",  # Qualcomm
+    # "TXN",   # Texas Instruments
+
+    # # --- Top Finance & Banking ---
+    # "JPM",   # JPMorgan Chase
+    # "V",     # Visa
+    # "MA",    # Mastercard
+    # "BAC",   # Bank of America
+    # "GS",    # Goldman Sachs
+    # "MS",    # Morgan Stanley
+    # "BLK",   # BlackRock
 ]
 PERIOD = "5y" 
 DATA_DIR = "stock_data"
