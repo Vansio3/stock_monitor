@@ -51,12 +51,11 @@
         #detail-view { opacity: 0; transform: translateY(15px); transition: opacity 0.4s ease, transform 0.4s ease; }
         #detail-view.visible { opacity: 1; transform: translateY(0); }
 
-        /* --- LAYOUT CHANGE: This is the new container for the top row --- */
         .top-stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive 3-column layout */
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 16px;
-            margin-bottom: 16px; /* Space between top row and chart below */
+            margin-bottom: 16px;
         }
         
         .card { 
@@ -64,7 +63,7 @@
             border: 1px solid var(--border-color); 
             border-radius: 8px; padding: 16px; 
             box-shadow: 0 2px 5px var(--shadow-color); 
-            display: flex; /* Helps ensure cards have same height if content differs */
+            display: flex;
             flex-direction: column;
         }
         
@@ -73,7 +72,7 @@
         .prediction-hold { background-color: rgba(255, 193, 7, 0.15); border: 1px solid var(--accent-yellow); color: var(--accent-yellow); }
         .prediction-sell { background-color: rgba(231, 76, 60, 0.15); border: 1px solid var(--accent-red); color: var(--accent-red); }
 
-        table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-top: auto; /* Pushes table to bottom of card */ }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-top: auto; }
         th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border-color); }
         th { font-weight: 600; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85em; }
         tr:last-child td { border-bottom: none; }
@@ -97,7 +96,6 @@
         <div id="detail-view">
             <h1 id="detail-ticker">Select a ticker to begin</h1>
             
-            <!-- --- LAYOUT CHANGE: The three top cards are now wrapped in this grid container --- -->
             <div class="top-stats-grid">
                 <div class="card">
                     <h2>AI Prediction</h2>
@@ -113,7 +111,6 @@
                 </div>
             </div>
             
-            <!-- These cards are now outside the top grid and will appear on their own row below -->
             <div class="card" style="margin-bottom: 16px;">
                 <h2>Price History (1Y)</h2>
                 <div id="price-chart"></div>
@@ -146,7 +143,9 @@
                 0: { text: 'SELL', emoji: '🔴', className: 'prediction-sell' }
             };
 
+            // --- *** UPDATED: Added an entry for Confidence *** ---
             const hintGlossary = {
+                'Confidence': "This score (0-100%) measures how strongly the current market data matches historical patterns for this signal. It is NOT a measure of accuracy or a guaranteed probability of success. A high score indicates a strong pattern match, but the model's actual performance is best judged by its backtest metrics.",
                 'Return %': "The total profit or loss of the AI strategy over the entire backtest period, shown as a percentage.",
                 'Buy & Hold %': "The profit or loss you would have made by simply buying the stock on day one and selling on the last day, without any AI trades.",
                 'Sharpe Ratio': "Measures the strategy's return compared to its risk. A higher Sharpe Ratio (typically > 1) is better, indicating more return for each unit of risk taken.",
@@ -219,7 +218,14 @@
                 const prediction = masterData.predictions.find(p => p.Ticker === ticker);
                 if (prediction) {
                     const signalInfo = signalMap[prediction.Signal] || { text: 'UNKNOWN', className: '' };
-                    predictionBox.innerHTML = `<div>Signal: ${signalInfo.text}</div><div>Confidence: ${(prediction.Confidence * 100).toFixed(2)}%</div>`;
+                    const confidenceHint = hintGlossary['Confidence'] || '';
+                    // --- *** UPDATED: Prediction box now includes the tooltip *** ---
+                    predictionBox.innerHTML = `
+                        <div>Signal: ${signalInfo.text}</div>
+                        <div>
+                            <span class="tooltip-container" data-tooltip="${confidenceHint}">Confidence</span>: 
+                            ${(prediction.Confidence * 100).toFixed(2)}%
+                        </div>`;
                     predictionBox.className = `prediction-box ${signalInfo.className}`;
                 }
 
