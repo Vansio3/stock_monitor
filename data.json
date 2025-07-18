@@ -328,7 +328,7 @@
       "Return %": 678.9229368095278,
       "Sharpe Ratio": 1.1325504612038155,
       "Max Drawdown %": -34.13584700893083,
-      "Win Rate %": NaN,
+      "Win Rate %": null,
       "# Trades": 0,
       "Buy & Hold %": 115.15540628016932,
       "feature_importances": {
@@ -667,9 +667,9 @@
     },
     "ADBE": {
       "Return %": 0.0,
-      "Sharpe Ratio": NaN,
+      "Sharpe Ratio": null,
       "Max Drawdown %": -0.0,
-      "Win Rate %": NaN,
+      "Win Rate %": null,
       "# Trades": 0,
       "Buy & Hold %": -27.44713274149885,
       "feature_importances": {
@@ -698,9 +698,9 @@
     },
     "GS": {
       "Return %": 0.0,
-      "Sharpe Ratio": NaN,
+      "Sharpe Ratio": null,
       "Max Drawdown %": -0.0,
-      "Win Rate %": NaN,
+      "Win Rate %": null,
       "# Trades": 0,
       "Buy & Hold %": 114.98834103192696,
       "feature_importances": {
@@ -729,9 +729,9 @@
     },
     "MSFT": {
       "Return %": 0.0,
-      "Sharpe Ratio": NaN,
+      "Sharpe Ratio": null,
       "Max Drawdown %": -0.0,
-      "Win Rate %": NaN,
+      "Win Rate %": null,
       "# Trades": 0,
       "Buy & Hold %": 110.139883868648,
       "feature_importances": {
