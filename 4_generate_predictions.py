@@ -1,4 +1,4 @@
-# 4_generate_predictions.py (UPDATED FOR MORE FEATURES)
+# 4_generate_predictions.py (UPDATED FOR MORE FEATURES AND MARKET CONTEXT)
 
 import pandas as pd
 import pandas_ta as ta
@@ -21,13 +21,27 @@ def generate_all_predictions():
         print("No models found.")
         return
 
+    ### TIER 1: LOAD AND PREPARE MARKET DATA (SPY) FOR PREDICTION ###
+    try:
+        spy_df = pd.read_csv("stock_data/SPY.csv", index_col="Date", parse_dates=True)
+        spy_df.rename(columns={'Close': 'SPY_Close'}, inplace=True)
+        spy_df['SPY_pct_change'] = spy_df['SPY_Close'].pct_change()
+        spy_df.ta.rsi(close='SPY_Close', append=True, col_names=('SPY_RSI_14',))
+        market_features = spy_df[['SPY_pct_change', 'SPY_RSI_14']].dropna()
+        print("Successfully loaded market data (SPY) for predictions.")
+    except FileNotFoundError:
+        print("Warning: SPY.csv not found. Market context features will be skipped.")
+        market_features = None
+
     all_predictions = []
     # --- THIS LIST MUST EXACTLY MATCH THE ONE IN 2_model_trainer.py ---
     features_list = [
         'RSI_14', 'MACD_12_26_9', 'MACDh_12_26_9', 'MACDs_12_26_9',
         'BBL_20_2.0', 'BBM_20_2.0', 'BBU_20_2.0', 'ATRr_14',
         'STOCHk_14_3_3', 'STOCHd_14_3_3', 'OBV', 'ADX_14', 'WILLR_14',
-        'RSI_change_1d', 'MACD_change_1d'
+        'RSI_change_1d', 'MACD_change_1d',
+        ### TIER 1: ADD NEW MARKET FEATURES TO THE LIST ###
+        'SPY_pct_change', 'SPY_RSI_14'
     ]
     
     print(f"Generating predictions for {len(tickers)} stocks...")
@@ -48,6 +62,10 @@ def generate_all_predictions():
             df.ta.willr(append=True)
             df['RSI_change_1d'] = df['RSI_14'].diff()
             df['MACD_change_1d'] = df['MACD_12_26_9'].diff()
+
+            ### TIER 1: JOIN WITH MARKET DATA ###
+            if market_features is not None:
+                df = df.join(market_features)
             
             df.dropna(inplace=True)
 
@@ -61,10 +79,13 @@ def generate_all_predictions():
 
             all_predictions.append({
                 'Ticker': ticker,
-                'Signal': prediction,
+                'Signal': prediction, # Will be 0, 1, or 2
                 'Confidence': confidence
             })
-            print(f"  {ticker}: {'BUY' if prediction == 1 else 'HOLD/SELL'} ({confidence:.2%})")
+            
+            ### TIER 1: MAP PREDICTION TO HUMAN-READABLE SIGNAL ###
+            signal_map = {0: 'SELL', 1: 'HOLD', 2: 'BUY'}
+            print(f"  {ticker}: {signal_map.get(prediction, 'UNKNOWN')} ({confidence:.2%})")
 
         except Exception as e:
             print(f"Could not generate prediction for {ticker}: {e}")

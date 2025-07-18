@@ -6,6 +6,8 @@ import os
 
 # --- Settings ---
 TICKERS = [
+    ### TIER 1: ADD MARKET BENCHMARK ###
+    "SPY",   # S&P 500 ETF - Market Benchmark
     # --- Top Tech & Cloud ---
     "GOOGL", # Google
     "TSLA",  # Tesla

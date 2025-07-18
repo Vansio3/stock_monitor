@@ -2,9 +2,10 @@
 
 import pandas as pd
 import pandas_ta as ta
+import numpy as np ### TIER 1: Import numpy for the new target logic
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report # Replaces accuracy_score
-from sklearn.model_selection import GridSearchCV # New import for tuning
+from sklearn.metrics import classification_report
+from sklearn.model_selection import GridSearchCV
 import joblib
 import os
 import warnings
@@ -39,6 +40,21 @@ def train_all_models():
         os.makedirs(MODELS_DIR)
         print(f"Created directory: {MODELS_DIR}")
 
+    ### TIER 1: LOAD AND PREPARE MARKET DATA (SPY) ###
+    try:
+        spy_df = pd.read_csv("stock_data/SPY.csv", index_col="Date", parse_dates=True)
+        # Use a unique name for SPY's close to avoid conflicts
+        spy_df.rename(columns={'Close': 'SPY_Close'}, inplace=True)
+        # Calculate market features
+        spy_df['SPY_pct_change'] = spy_df['SPY_Close'].pct_change()
+        spy_df.ta.rsi(close='SPY_Close', append=True, col_names=('SPY_RSI_14',))
+        # Keep only the features we need, and drop any initial NaNs
+        market_features = spy_df[['SPY_pct_change', 'SPY_RSI_14']].dropna()
+        print("Successfully loaded and processed market data (SPY).")
+    except FileNotFoundError:
+        print("Warning: SPY.csv not found. Market context features will be skipped.")
+        market_features = None
+    
     print(f"Found data for {len(TICKERS)} stocks. Starting hyperparameter tuning and training...")
 
     features_list = [
@@ -47,8 +63,15 @@ def train_all_models():
         'STOCHk_14_3_3', 'STOCHd_14_3_3', 'OBV', 'ADX_14', 'WILLR_14',
         'RSI_change_1d', 'MACD_change_1d'
     ]
+    ### TIER 1: ADD NEW MARKET FEATURES TO THE LIST ###
+    if market_features is not None:
+        features_list.extend(['SPY_pct_change', 'SPY_RSI_14'])
 
     for ticker in TICKERS:
+        ### TIER 1: Skip training a model for the benchmark itself ###
+        if ticker == 'SPY':
+            continue
+            
         print(f"--- Processing {ticker} ---")
 
         try:
@@ -57,7 +80,7 @@ def train_all_models():
             print(f"Data for {ticker} not found, skipping.")
             continue
 
-        # --- FEATURE ENGINEERING (Same as before) ---
+        # --- FEATURE ENGINEERING ---
         df.ta.rsi(append=True)
         df.ta.macd(append=True)
         df.ta.bbands(length=20, append=True)
@@ -68,9 +91,23 @@ def train_all_models():
         df.ta.willr(append=True)
         df['RSI_change_1d'] = df['RSI_14'].diff()
         df['MACD_change_1d'] = df['MACD_12_26_9'].diff()
+        
+        ### TIER 1: JOIN WITH MARKET DATA ###
+        if market_features is not None:
+            df = df.join(market_features)
+
         df['future_price'] = df['Close'].shift(-TARGET_DAYS_AHEAD)
         df['price_change'] = (df['future_price'] - df['Close']) / df['Close']
-        df['target'] = (df['price_change'] > PREDICTION_THRESHOLD).astype(int)
+
+        ### TIER 1: REDEFINE TARGET FOR 3-CLASS CLASSIFICATION (SELL/HOLD/BUY) ###
+        conditions = [
+            df['price_change'] > PREDICTION_THRESHOLD,   # Condition for Buy
+            df['price_change'] < -PREDICTION_THRESHOLD,  # Condition for Sell
+        ]
+        # Outcomes: 2 for Buy, 0 for Sell. Default is 1 (Hold).
+        choices = [2, 0] 
+        df['target'] = np.select(conditions, choices, default=1)
+        
         df.dropna(inplace=True)
 
         X = df[features_list]
@@ -84,42 +121,39 @@ def train_all_models():
         X_train, X_test = X[:split_index], X[split_index:]
         y_train, y_test = y[:split_index], y[split_index:]
 
-        # --- HYPERPARAMETER TUNING (NEW) ---
+        # --- HYPERPARAMETER TUNING ---
         print(f"Starting hyperparameter search for {ticker}...")
         
-        # 1. Define the grid of parameters to test
         param_grid = {
-            'n_estimators': [100, 200],         # Number of trees in the forest
-            'max_depth': [10, 20, None],       # Maximum depth of the trees
-            'min_samples_leaf': [2, 4],          # Minimum samples required at a leaf node
-            'max_features': ['sqrt', 'log2'],  # Number of features to consider for best split
+            'n_estimators': [100, 200],         
+            'max_depth': [10, 20, None],       
+            'min_samples_leaf': [2, 4],          
+            'max_features': ['sqrt', 'log2'],
         }
 
-        # 2. Set up the GridSearchCV object
         rf = RandomForestClassifier(random_state=42)
         grid_search = GridSearchCV(
             estimator=rf,
             param_grid=param_grid,
-            cv=3,                      # 3-fold cross-validation
-            scoring='f1',              # <<< Evaluate based on F1-score, not accuracy
-            n_jobs=-1,                 # Use all available CPU cores
-            verbose=1                  # Show progress
+            cv=3,
+            ### TIER 1: Use a metric suitable for multi-class, imbalanced data ###
+            scoring='f1_weighted',
+            n_jobs=-1,
+            verbose=1
         )
 
-        # 3. Run the search on the training data
         grid_search.fit(X_train, y_train)
 
-        # 4. The best model is found by the search
         model = grid_search.best_estimator_
         print(f"Best parameters found: {grid_search.best_params_}")
 
-        # --- EVALUATE MODEL (IMPROVED) ---
+        # --- EVALUATE MODEL ---
         predictions = model.predict(X_test)
         
-        # Use classification_report for a detailed breakdown
         print(f"\n--- Evaluation Report for {ticker} (Test Set) ---")
-        # target_names are mapped to the labels 0 and 1
-        print(classification_report(y_test, predictions, target_names=['Hold/Sell (0)', 'Buy (1)'], zero_division=0))
+        ### TIER 1: Update target names for the 3 classes ###
+        target_names = ['Sell (0)', 'Hold (1)', 'Buy (2)']
+        print(classification_report(y_test, predictions, target_names=target_names, zero_division=0))
 
         # --- Save the best trained model ---
         model_path = os.path.join(MODELS_DIR, f"{ticker}_model.pkl")
