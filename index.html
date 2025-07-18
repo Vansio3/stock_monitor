@@ -51,12 +51,11 @@
         #detail-view { opacity: 0; transform: translateY(15px); transition: opacity 0.4s ease, transform 0.4s ease; }
         #detail-view.visible { opacity: 1; transform: translateY(0); }
 
-        /* --- LAYOUT CHANGE: This is the new container for the top row --- */
         .top-stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* Responsive 3-column layout */
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 16px;
-            margin-bottom: 16px; /* Space between top row and chart below */
+            margin-bottom: 16px;
         }
         
         .card { 
@@ -64,7 +63,7 @@
             border: 1px solid var(--border-color); 
             border-radius: 8px; padding: 16px; 
             box-shadow: 0 2px 5px var(--shadow-color); 
-            display: flex; /* Helps ensure cards have same height if content differs */
+            display: flex;
             flex-direction: column;
         }
         
@@ -73,11 +72,33 @@
         .prediction-hold { background-color: rgba(255, 193, 7, 0.15); border: 1px solid var(--accent-yellow); color: var(--accent-yellow); }
         .prediction-sell { background-color: rgba(231, 76, 60, 0.15); border: 1px solid var(--accent-red); color: var(--accent-red); }
 
-        table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-top: auto; /* Pushes table to bottom of card */ }
-        th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border-color); }
-        th { font-weight: 600; color: var(--text-secondary); text-transform: uppercase; font-size: 0.85em; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9em; margin-top: auto; }
+        
+        /* FIX 1: Explicitly set ALL table headers to align left */
+        th { 
+            text-align: left; 
+            padding: 10px 8px; 
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600; 
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-size: 0.85em;
+        }
+
+        td { 
+            text-align: left; 
+            padding: 10px 8px; 
+            border-bottom: 1px solid var(--border-color);
+        }
+
         tr:last-child td { border-bottom: none; }
-        td:nth-child(2) { text-align: right; font-weight: 600; color: var(--text-primary); }
+        
+        /* FIX 2: Make the right-align rule apply ONLY to data cells (td), not headers (th) */
+        td:nth-child(2) { 
+            text-align: right; 
+            font-weight: 600; 
+            color: var(--text-primary);
+        }
 
         .feature-importance-bar { background-color: var(--accent-color); height: 100%; border-radius: 3px; opacity: 0.7; }
         .feature-importance-bg { background-color: #333; border-radius: 3px; height: 8px; width: 80px; }
