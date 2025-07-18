@@ -37,7 +37,7 @@ This project is an advanced, end-to-end algorithmic trading pipeline. It automat
 ## Key Features
 
 -   **Automated Pipeline:** A single command (`python main.py`) runs the entire workflow, from data collection to the final `data.json` for the web dashboard.
--   **Advanced Feature Engineering:** Calculates a wide array of technical indicators, including RSI, MACD, Bollinger Bands, ATR, On-Balance Volume (OBV), ADX, Chaikin Money Flow (CMF), and more. It also incorporates **market context** by using S&P 500 (SPY) data as features for individual stocks.
+-   **Advanced Feature Engineering:** Calculates a wide array of technical indicators (RSI, MACD, etc.) and incorporates **market context** using S&P 500 data. It also includes advanced metrics like **trend strength filters** (e.g., SMA 50 vs. 200), **mean-reversion indicators** (distance from moving average), and **second-order indicators** (RSI volatility).
 -   **Robust ML Modeling:**
     -   Uses **LightGBM**, a powerful and efficient gradient boosting framework, for classification.
     -   Performs **hyperparameter tuning** for each model using `GridSearchCV`.
@@ -45,8 +45,8 @@ This project is an advanced, end-to-end algorithmic trading pipeline. It automat
 -   **Adaptive Target Labeling:** Instead of a fixed percentage, it uses a **quantile-based system** to define targets. The top 20% of future returns are labeled 'Buy', and the bottom 20% are labeled 'Sell', making the system adaptive to each stock's unique volatility.
 -   **Handles Class Imbalance:** Intelligently manages the natural imbalance of Buy/Sell/Hold signals by using the `class_weight='balanced'` parameter, forcing the model to pay attention to the rare but critical trading opportunities.
 -   **Explainable AI (XAI):** The dashboard displays the top "Model Drivers" (feature importances) for each stock, providing insight into *why* a model is making a particular decision.
--   **Comprehensive Backtesting:** Uses the `backtesting.py` library to simulate strategy performance, generating key metrics like Sharpe Ratio, Max Drawdown, Win Rate, and Return vs. Buy & Hold.
--   **Interactive Dashboard:** A sleek, modern dashboard (`index.html`) built with vanilla JavaScript and Plotly.js. It features a rich glossary with tooltips explaining every metric and indicator.
+-   **Comprehensive Backtesting:** Uses the `backtesting.py` library to simulate strategy performance, generating key metrics like Sharpe Ratio, Max Drawdown, and Win Rate. The simulation includes risk management via a configurable **stop-loss**.
+-   **Interactive Dashboard:** A sleek, modern dashboard (`index.html`) built with vanilla JavaScript and Plotly.js. It features a rich **glossary** with tooltips explaining every metric and indicator, making complex data accessible to all users.
 
 ## Technology Stack
 
@@ -109,7 +109,7 @@ The project is orchestrated by `main.py`, which runs the following scripts in se
 
 3.  **`3_automated_backtest.py`**:
     -   Loads each trained model payload.
-    -   Runs a simulation on the historical data, using the model's predictions (0, 1, 2) to execute trades (Sell, Hold, Buy). Includes a stop-loss for risk management.
+    -   Runs a simulation on the historical data, using the model's predictions (0, 1, 2) to execute trades (Sell, Hold, Buy). Includes a **stop-loss for risk management**.
     -   Aggregates the performance stats for all tickers and saves them to `backtest_summary.csv`.
 
 4.  **`4_generate_predictions.py`**:
@@ -125,7 +125,7 @@ The project is orchestrated by `main.py`, which runs the following scripts in se
 6.  **`index.html`**:
     -   A static web page that acts as the dashboard.
     -   Its JavaScript fetches the `data.json` file on load.
-    -   It dynamically populates the ticker grid, performance tables, model driver charts, and interactive price charts.
+    -   It dynamically populates the ticker grid, performance tables, model driver charts, interactive price charts, and **educational tooltips**.
 
 ## Disclaimer
 
