@@ -8,23 +8,60 @@ python main.py
 
 # AI Quant Desk
 
-This project is an end-to-end algorithmic trading pipeline. It automates the process of fetching stock data, training a machine learning model for each stock to predict price movements, backtesting the strategy's performance, and generating real-time trading signals. All results and signals are consolidated and displayed on a clean, interactive web dashboard.
+This project is an advanced, end-to-end algorithmic trading pipeline. It automates data fetching, robust model training, and realistic backtesting to generate predictive trading signals. The entire system is designed to find a statistical edge in the market by leveraging sophisticated machine learning techniques and comprehensive feature engineering. All results are consolidated and displayed on a clean, interactive web dashboard.
 
-## Features
+---
+*Generated using the latest pipeline updates:*
 
--   **Automated Data Pipeline:** A single command (`python main.py`) runs the entire workflow from data collection to final output.
--   **Data Collection:** Downloads 5 years of historical stock data for a predefined list of tech and finance tickers using `yfinance`.
--   **Machine Learning Model Training:** Trains a unique Random Forest Classifier for each stock to predict whether the price will increase by a set threshold within a future period.
--   **Feature Engineering:** Automatically calculates technical indicators (RSI, MACD, Bollinger Bands, ATR) using `pandas-ta` to serve as features for the models.
--   **Automated Backtesting:** Uses the `backtesting.py` library to evaluate the performance of the trained models on historical data, generating key metrics like Sharpe Ratio, Win Rate, and Total Return.
--   **Signal Generation:** Creates up-to-date 'BUY' or 'HOLD/SELL' signals with confidence scores for each stock.
--   **Web Dashboard:** An interactive, single-page dashboard (`index.html`) built with vanilla JavaScript and Plotly.js to visualize predictions, backtest summaries, and price history.
+---
+
+## Quick Start
+
+1.  **Set up the environment and install dependencies:**
+    ```bash
+    # Create and activate a virtual environment (recommended)
+    python -m venv .venv
+    .\.venv\Scripts\Activate.ps1
+
+    # Install all required libraries
+    pip install -r requirements.txt
+    ```
+
+2.  **Run the entire data pipeline:**
+    ```bash
+    python main.py
+    ```
+
+3.  **View the results:**
+    *   Open `index.html` in your browser.
+    *   Check `latest_predictions.csv` for the most recent signals.
+    *   Check `backtest_summary.csv` for detailed performance metrics.
+
+## Key Features
+
+-   **Automated Pipeline:** A single command (`python main.py`) runs the entire workflow, from data collection to the final `data.json` for the web dashboard.
+-   **Advanced Feature Engineering:** Calculates a wide array of technical indicators, including RSI, MACD, Bollinger Bands, ATR, On-Balance Volume (OBV), ADX, Chaikin Money Flow (CMF), and more. It also incorporates **market context** by using S&P 500 (SPY) data as features for individual stocks.
+-   **Robust ML Modeling:**
+    -   Uses **LightGBM**, a powerful and efficient gradient boosting framework, for classification.
+    -   Performs **hyperparameter tuning** for each model using `GridSearchCV`.
+    -   Employs **Time-Series Cross-Validation** (`TimeSeriesSplit`) to find the best models in a chronologically-aware manner, simulating real-world performance far more accurately than a standard train/test split.
+-   **Adaptive Target Labeling:** Instead of a fixed percentage, it uses a **quantile-based system** to define targets. The top 20% of future returns are labeled 'Buy', and the bottom 20% are labeled 'Sell', making the system adaptive to each stock's unique volatility.
+-   **Handles Class Imbalance:** Intelligently manages the natural imbalance of Buy/Sell/Hold signals by using the `class_weight='balanced'` parameter, forcing the model to pay attention to the rare but critical trading opportunities.
+-   **Explainable AI (XAI):** The dashboard displays the top "Model Drivers" (feature importances) for each stock, providing insight into *why* a model is making a particular decision.
+-   **Comprehensive Backtesting:** Uses the `backtesting.py` library to simulate strategy performance, generating key metrics like Sharpe Ratio, Max Drawdown, Win Rate, and Return vs. Buy & Hold.
+-   **Interactive Dashboard:** A sleek, modern dashboard (`index.html`) built with vanilla JavaScript and Plotly.js. It features a rich glossary with tooltips explaining every metric and indicator.
 
 ## Technology Stack
 
 -   **Backend & ML:** Python
--   **Core Libraries:** `pandas`, `scikit-learn`, `yfinance`, `pandas-ta`, `joblib`, `backtesting.py`
--   **Frontend:** HTML, CSS, JavaScript
+-   **Core Libraries:**
+    -   `pandas`: Data manipulation and analysis.
+    -   `lightgbm` & `scikit-learn`: For building and evaluating machine learning models.
+    -   `yfinance`: Downloading historical stock data from Yahoo! Finance.
+    -   `pandas-ta`: Calculating technical analysis indicators.
+    -   `joblib`: Saving and loading trained model objects.
+    -   `backtesting.py`: For running historical strategy simulations.
+-   **Frontend:** HTML, CSS, JavaScript (no frameworks)
 -   **Charting:** Plotly.js
 
 ## How to Run
@@ -37,69 +74,62 @@ This project is an end-to-end algorithmic trading pipeline. It automates the pro
 
 2.  **Set up a Virtual Environment (Recommended)**
     ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows, use `venv\Scripts\activate`
+    python -m venv .venv
+    # On Windows PowerShell
+    .\.venv\Scripts\Activate.ps1
+    # On macOS/Linux
+    # source .venv/bin/activate
     ```
 
 3.  **Install Dependencies**
-    A `requirements.txt` file can be created with the following content:
-    ```
-    yfinance
-    pandas
-    pandas_ta
-    scikit-learn
-    joblib
-    backtesting
-    ```
-    Then, install the dependencies:
+    The `requirements.txt` file contains all necessary libraries.
     ```bash
     pip install -r requirements.txt
     ```
 
 4.  **Run the Full Pipeline**
-    This command will execute all the Python scripts in order, from data collection to the final JSON export.
+    This command executes all the Python scripts in order, from data collection to the final JSON export.
     ```bash
     python main.py
     ```
 
 5.  **View the Dashboard**
-    Open the `index.html` file in your favorite web browser to see the results.
+    Simply open the `index.html` file in your favorite web browser.
 
-## How It Works: The Pipeline
+## The Pipeline Explained
 
 The project is orchestrated by `main.py`, which runs the following scripts in sequence:
 
-1.  **`1_data_collector.py`**: Fetches 5 years of daily stock data for the tickers defined in the script. It saves the data for each stock into a separate CSV file inside the `stock_data/` directory.
+1.  **`1_data_collector.py`**: Fetches 5 years of daily stock data for the tickers defined in the script. It saves the data for each stock into a separate CSV file inside the `stock_data/` directory and handles potential data formatting issues from the API.
 
-2.  **`2_model_trainer.py`**: For each stock data CSV, this script:
-    -   Calculates technical analysis features (RSI, MACD, Bollinger Bands, ATR).
-    -   Defines a target variable: `1` if the stock price increases by more than 2% within the next 5 days, and `0` otherwise.
-    -   Splits the data chronologically into a training set (80%) and a testing set (20%).
-    -   Trains a `RandomForestClassifier` model on the training data.
-    -   Saves the trained model as a `.pkl` file in the `models/` directory.
+2.  **`2_model_trainer.py`**: This is the core of the AI system. For each stock, it:
+    -   Calculates a comprehensive set of technical and market-based features.
+    -   Defines a target variable using **quantile-based labeling**: 'Buy' (2) for top-tier future returns, 'Sell' (0) for bottom-tier, and 'Hold' (1) for everything in between.
+    -   Splits the data chronologically into a training set (80%) and a final hold-out test set (20%).
+    -   Uses `GridSearchCV` with `TimeSeriesSplit` to find the best hyperparameters for a `LightGBM` model, training it with `class_weight='balanced'`.
+    -   Evaluates the best model on the unseen test set.
+    -   Saves a model "payload" (`.pkl`) containing the trained model, the exact order of features used, and their importances.
 
 3.  **`3_automated_backtest.py`**:
-    -   Loads each trained model and its corresponding historical data.
-    -   Uses the `backtesting.py` library to run a simulation where the model's predictions (1=buy, 0=sell) dictate trading actions.
+    -   Loads each trained model payload.
+    -   Runs a simulation on the historical data, using the model's predictions (0, 1, 2) to execute trades (Sell, Hold, Buy). Includes a stop-loss for risk management.
     -   Aggregates the performance stats for all tickers and saves them to `backtest_summary.csv`.
 
 4.  **`4_generate_predictions.py`**:
-    -   For each stock, it fetches the latest data and calculates the same technical features.
-    -   It loads the corresponding trained model to predict the next trading signal ('BUY' or 'HOLD/SELL').
-    -   It also calculates the model's confidence in that prediction.
-    -   The results are saved to `latest_predictions.csv`.
+    -   For each stock, it loads the latest data and calculates all necessary features.
+    -   It loads the corresponding model payload and uses it to predict the next trading signal, ensuring the feature order matches training precisely.
+    -   The final predictions and confidence scores are saved to `latest_predictions.csv`.
 
 5.  **`5_export_for_web.py`**:
-    -   This final script acts as a data consolidator for the frontend.
-    -   It reads `latest_predictions.csv` and `backtest_summary.csv`.
-    -   It also reads the last 1-year of price history for each stock.
-    -   All this information is combined into a single, structured `data.json` file, which is what the dashboard consumes.
+    -   Consolidates all the necessary data for the frontend.
+    -   It reads `latest_predictions.csv`, `backtest_summary.csv`, the model feature importances, and the last year of price history for each stock.
+    -   All this information is combined into a single, structured `data.json` file.
 
 6.  **`index.html`**:
-    -   This is the static web page that serves as the dashboard.
-    -   When opened, its JavaScript code fetches `data.json`.
-    -   It dynamically populates the ticker grid, performance tables, and interactive price charts using the data from the JSON file.
+    -   A static web page that acts as the dashboard.
+    -   Its JavaScript fetches the `data.json` file on load.
+    -   It dynamically populates the ticker grid, performance tables, model driver charts, and interactive price charts.
 
 ## Disclaimer
 
-This project is for educational purposes only and should not be considered financial advice. The trading signals generated are based on a simple model and historical data, which is not indicative of future results. Do not risk money that you are not prepared to lose.
+This project is for educational purposes only and should not be considered financial advice. The trading signals generated are based on historical data, which is not indicative of future results. Financial markets are inherently unpredictable. Do not risk money that you are not prepared to lose.
