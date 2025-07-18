@@ -1,4 +1,4 @@
-# 2_model_trainer.py (UPGRADED WITH TIER 1 ACCURACY & ROBUST LABELING)
+# 2_model_trainer.py (UPDATED WITH FASTER RANDOMIZEDSEARCHCV)
 
 import pandas as pd
 import pandas_ta as ta
@@ -9,7 +9,8 @@ import warnings
 
 # Import new libraries for advanced modeling
 import lightgbm as lgb
-from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
+# --- *** UPDATED IMPORT *** ---
+from sklearn.model_selection import TimeSeriesSplit, RandomizedSearchCV # Changed GridSearchCV to RandomizedSearchCV
 from sklearn.metrics import classification_report
 from sklearn.exceptions import ConvergenceWarning
 
@@ -27,18 +28,17 @@ except FileNotFoundError:
 
 TARGET_DAYS_AHEAD = 5
 MODELS_DIR = "models"
-TEST_SET_PERCENTAGE = 0.2
-# --- NEW: Quantile settings for labeling ---
-BUY_QUANTILE = 0.80  # Top 20% of future returns will be labeled "Buy"
-SELL_QUANTILE = 0.20 # Bottom 20% of future returns will be labeled "Sell"
+TEST_SET_PERCENTAGE = 0.3
+BUY_QUANTILE = 0.80
+SELL_QUANTILE = 0.20
 
 
 # --- Code ---
 def train_all_models():
     """
     Loops through all tickers, engineers features, uses robust quantile-based labeling,
-    finds best hyperparameters with Time-Series CV, trains a LightGBM model,
-    evaluates it, and saves the final model and its metadata.
+    finds best hyperparameters with Time-Series CV using RandomizedSearchCV,
+    trains a LightGBM model, evaluates it, and saves the final model.
     """
     if not TICKERS:
         print("No stock data found to train on. Exiting.")
@@ -63,7 +63,6 @@ def train_all_models():
 
     print(f"Found data for {len(TICKERS)} stocks. Starting advanced training...")
 
-    # --- NEW: Updated feature list with Tier 1 additions ---
     features_list = [
         'RSI_14', 'MACD_12_26_9', 'MACDh_12_26_9', 'MACDs_12_26_9',
         'BBL_20_2.0', 'BBM_20_2.0', 'BBU_20_2.0', 'ATRr_14',
@@ -71,7 +70,6 @@ def train_all_models():
         'RSI_change_1d', 'MACD_change_1d',
         'SPY_pct_change', 'SPY_RSI_14', 'SPY_RSI_change_1d',
         'volatility', 'CMF_20', 'above_200_sma',
-        # --- Tier 1 Additions ---
         'sma_trend_strength', 'distance_from_sma_200', 'RSI_volatility', 'ROC_21'
     ]
 
@@ -87,7 +85,7 @@ def train_all_models():
             print(f"Data for {ticker} not found, skipping.")
             continue
 
-        # --- FEATURE ENGINEERING (WITH TIER 1 ADDITIONS) ---
+        # --- FEATURE ENGINEERING ---
         df.ta.rsi(append=True)
         df.ta.macd(append=True)
         df.ta.bbands(length=20, append=True)
@@ -97,12 +95,11 @@ def train_all_models():
         df.ta.adx(append=True)
         df.ta.willr(append=True)
         df.ta.cmf(high=df['High'], low=df['Low'], close=df['Close'], volume=df['Volume'], append=True)
-        df.ta.roc(length=21, append=True) # New: Rate of Change
+        df.ta.roc(length=21, append=True)
         df['RSI_change_1d'] = df['RSI_14'].diff()
         df['MACD_change_1d'] = df['MACD_12_26_9'].diff()
         df['volatility'] = df['Close'].pct_change().rolling(window=TARGET_DAYS_AHEAD).std() * np.sqrt(TARGET_DAYS_AHEAD)
         
-        # New: Trend and Mean Reversion Features
         sma50 = df.ta.sma(50)
         sma200 = df.ta.sma(200)
         df['above_200_sma'] = (df['Close'] > sma200).astype(int)
@@ -113,31 +110,24 @@ def train_all_models():
         if market_features is not None:
             df = df.join(market_features)
 
-        # --- ROBUST, LEAK-FREE LABELING (TIER 1 FIX) ---
-        # 1. Calculate future returns first
+        # --- ROBUST, LEAK-FREE LABELING ---
         df['future_return'] = df['Close'].pct_change(TARGET_DAYS_AHEAD).shift(-TARGET_DAYS_AHEAD)
-
-        # 2. Drop NaNs created by indicators and future return calculation
         df.dropna(inplace=True)
-
-        # 3. Define the chronological split point
+        
         split_index = int(len(df) * (1 - TEST_SET_PERCENTAGE))
         
-        # 4. Calculate quantile thresholds ONLY from the training data's returns
-        # This prevents data leakage from the test set.
         train_returns = df['future_return'].iloc[:split_index]
         buy_threshold = train_returns.quantile(BUY_QUANTILE)
         sell_threshold = train_returns.quantile(SELL_QUANTILE)
         
         print(f"Labeling thresholds for {ticker} (from training data): Sell < {sell_threshold:.4f}, Buy > {buy_threshold:.4f}")
 
-        # 5. Apply these fixed thresholds to the entire dataset to create labels
         conditions = [
             df['future_return'] > buy_threshold,
             df['future_return'] < sell_threshold,
         ]
-        choices = [2, 0] # 2 for Buy, 0 for Sell
-        df['target'] = np.select(conditions, choices, default=1) # 1 for Hold
+        choices = [2, 0]
+        df['target'] = np.select(conditions, choices, default=1)
         
         print(f"Label distribution for {ticker}:\n{df['target'].value_counts(normalize=True)}")
 
@@ -150,7 +140,6 @@ def train_all_models():
             print(f"Not enough data for {ticker} after processing, skipping.")
             continue
         
-        # Split using the same index as before
         X_train, X_test = X.iloc[:split_index], X.iloc[split_index:]
         y_train, y_test = y.iloc[:split_index], y.iloc[split_index:]
 
@@ -159,17 +148,31 @@ def train_all_models():
         lgbm = lgb.LGBMClassifier(random_state=42, verbose=-1, class_weight='balanced')
         
         param_grid = {
-            'n_estimators': [100, 200, 300],
-            'learning_rate': [0.05, 0.1],
-            'num_leaves': [20, 31, 40],
+            'n_estimators': [100, 200, 300, 400],
+            'learning_rate': [0.01, 0.05, 0.1],
+            'num_leaves': [20, 31, 40, 50],
+            'reg_alpha': [0.0, 0.1, 0.5],
+            'reg_lambda': [0.0, 0.1, 0.5]
         }
 
-        tscv = TimeSeriesSplit(n_splits=5)
-        grid_search = GridSearchCV(estimator=lgbm, param_grid=param_grid, cv=tscv, scoring='f1_weighted', n_jobs=-1, verbose=1)
-        grid_search.fit(X_train, y_train)
+        tscv = TimeSeriesSplit(n_splits=3) # Reduced folds for speed
+        
+        # --- *** UPDATED: Using RandomizedSearchCV for efficiency *** ---
+        # It will test 25 random combinations instead of all 432 possibilities.
+        random_search = RandomizedSearchCV(
+            estimator=lgbm, 
+            param_distributions=param_grid, 
+            n_iter=25,  # Number of parameter settings that are sampled
+            cv=tscv, 
+            scoring='f1_weighted', 
+            n_jobs=-1, 
+            verbose=1, 
+            random_state=42
+        )
+        random_search.fit(X_train, y_train)
 
-        model = grid_search.best_estimator_
-        print(f"Best parameters found: {grid_search.best_params_}")
+        model = random_search.best_estimator_
+        print(f"Best parameters found: {random_search.best_params_}")
 
         # --- EVALUATION ---
         predictions = model.predict(X_test)

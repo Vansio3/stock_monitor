@@ -1,4 +1,4 @@
-# 3_automated_backtest.py (CORRECTED FOR backtesting.py OBJECTS)
+# 3_automated_backtest.py (UPDATED WITH MORE REALISTIC TRADING LOGIC & EXECUTION)
 
 import pandas as pd
 import pandas_ta as ta
@@ -25,15 +25,10 @@ def identity_func(series):
 def rolling_volatility(series, window, target_days):
     return series.pct_change().rolling(window=window).std() * np.sqrt(target_days)
 
-# --- *** THE FIX IS HERE *** ---
-# Create a new composite indicator function that performs both steps.
-# It takes a raw pandas Series, calculates RSI, then calculates the rolling std on the result.
 def rsi_volatility_func(series: pd.Series, rsi_window=14, vol_window=20) -> pd.Series:
     """Calculates RSI and then the rolling standard deviation of that RSI."""
     rsi = ta.rsi(series, length=rsi_window)
-    # The result of ta.rsi might have NaNs, which is fine. .rolling() handles them.
     return rsi.rolling(window=vol_window).std()
-# --- *** END OF FIX PART 1 *** ---
 
 def run_all_backtests():
     try:
@@ -85,12 +80,7 @@ def run_all_backtests():
                     self.sma50 = self.I(indicator_func, ta.sma, close_series, length=50)
                     self.sma200 = self.I(indicator_func, ta.sma, close_series, length=200)
                     self.roc21 = self.I(indicator_func, ta.roc, close_series, length=21)
-
-                    # --- *** THE FIX IS HERE *** ---
-                    # Call the new composite function with the raw close_series.
-                    # This correctly computes the final value in one step for the backtester.
                     self.rsi_volatility = self.I(rsi_volatility_func, close_series)
-                    # --- *** END OF FIX PART 2 *** ---
 
                     if 'SPY_pct_change' in self.data.df.columns:
                         self.spy_pct_change = self.I(identity_func, self.data.SPY_pct_change)
@@ -99,15 +89,20 @@ def run_all_backtests():
                     else:
                         nan_series = pd.Series([np.nan] * len(self.data.Close), index=self.data.index)
                         self.spy_pct_change, self.spy_rsi, self.spy_rsi_change = nan_series, nan_series, nan_series
-
+                
+                # --- *** UPDATED TRADING LOGIC *** ---
                 def next(self):
+                    # Do not trade if there is not enough data to calculate indicators
+                    if len(self.data.Close) < 210: # A safe buffer for a 200-day SMA
+                        return
+
                     feature_values = {
                         'RSI_14': self.rsi[-1], 'MACD_12_26_9': self.macd[-1], 'MACDh_12_26_9': self.macd_hist[-1],
                         'MACDs_12_26_9': self.macd_signal[-1], 'BBL_20_2.0': self.bbl[-1], 'BBM_20_2.0': self.bbm[-1],
                         'BBU_20_2.0': self.bbu[-1], 'ATRr_14': self.atr[-1], 'STOCHk_14_3_3': self.stochk[-1],
                         'STOCHd_14_3_3': self.stochd[-1], 'OBV': self.obv[-1], 'ADX_14': self.adx[-1], 'WILLR_14': self.willr[-1],
-                        'RSI_change_1d': self.rsi[-1] - self.rsi[-2] if len(self.rsi) > 1 else 0,
-                        'MACD_change_1d': self.macd[-1] - self.macd[-2] if len(self.macd) > 1 else 0,
+                        'RSI_change_1d': self.rsi[-1] - self.rsi[-2],
+                        'MACD_change_1d': self.macd[-1] - self.macd[-2],
                         'SPY_pct_change': self.spy_pct_change[-1], 'SPY_RSI_14': self.spy_rsi[-1],
                         'SPY_RSI_change_1d': self.spy_rsi_change[-1],
                         'CMF_20': self.cmf[-1],
@@ -119,38 +114,34 @@ def run_all_backtests():
                         'ROC_21': self.roc21[-1]
                     }
                     features = pd.DataFrame([feature_values])[feature_order]
-                    if features.isnull().values.any(): return
-                    prediction = model.predict(features)[0]
-                    if prediction == 2 and not self.position:
-                        self.buy(sl=self.data.Close[-1] * (1 - STOP_LOSS_PCT))
-                    elif prediction == 0 and self.position:
-                        self.position.close()
 
+                    # Ensure all features are present and not NaN
+                    if features.isnull().values.any():
+                        return
+
+                    prediction = model.predict(features)[0]
+
+                    # If we are not in a position, only enter on a BUY signal
+                    if not self.position and prediction == 2:
+                        self.buy(sl=self.data.Close[-1] * (1 - STOP_LOSS_PCT))
+                    
+                    # If we are in a position, exit if the signal is no longer BUY
+                    elif self.position and prediction != 2:
+                        self.position.close()
+            
             df = pd.read_csv(f"stock_data/{ticker}.csv", index_col="Date", parse_dates=True)
             if market_features is not None:
                 df = df.join(market_features)
 
-            temp_df = df.copy()
-            temp_df.ta.rsi(append=True)
-            temp_df.ta.macd(append=True)
-            temp_df.ta.bbands(append=True)
-            temp_df.ta.atr(append=True)
-            temp_df.ta.stoch(append=True)
-            temp_df.ta.obv(append=True)
-            temp_df.ta.adx(append=True)
-            temp_df.ta.willr(append=True)
-            temp_df.ta.cmf(append=True)
-            temp_df.ta.roc(length=21, append=True)
-            temp_df['RSI_volatility'] = temp_df['RSI_14'].rolling(window=20).std()
-            temp_df['volatility'] = rolling_volatility(temp_df['Close'], 5, 5)
-            sma50_temp = ta.sma(temp_df['Close'], length=50)
-            sma200_temp = ta.sma(temp_df['Close'], length=200)
-            temp_df['sma_trend_strength'] = (sma50_temp > sma200_temp).astype(int)
-            temp_df['distance_from_sma_200'] = (temp_df['Close'] - sma200_temp) / sma200_temp
-            first_valid_index = temp_df.dropna().index[0]
-            test_df = df.loc[first_valid_index:]
-
-            bt = Backtest(test_df, AiStrategy, cash=10000, commission=.002)
+            # --- *** MORE REALISTIC BACKTEST EXECUTION SETTINGS *** ---
+            # trade_on_close=False ensures trades execute on the next bar's open,
+            # preventing the model from seeing the close price of the bar it's trading on.
+            bt = Backtest(df, AiStrategy, 
+                          cash=10000, 
+                          commission=.002,
+                          trade_on_close=False,
+                          exclusive_orders=True)
+                          
             stats = bt.run()
             stats['Ticker'] = ticker
             all_stats.append(stats)
