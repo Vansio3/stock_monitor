@@ -1,16 +1,13 @@
-# 2_model_trainer.py
+# 2_model_trainer.py (UPDATED FOR MORE FEATURES)
 
 import pandas as pd
 import pandas_ta as ta
-# We no longer need train_test_split from sklearn
-# from sklearn.model_selection import train_test_split 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score
 import joblib
 import os
 
 # --- Settings ---
-# Automatically discover tickers by looking at the files in the stock_data folder.
 try:
     TICKERS = sorted([f.split('.')[0] for f in os.listdir('stock_data') if f.endswith('.csv')])
 except FileNotFoundError:
@@ -20,11 +17,11 @@ except FileNotFoundError:
 TARGET_DAYS_AHEAD = 5
 PREDICTION_THRESHOLD = 0.02
 MODELS_DIR = "models"
-TEST_SET_PERCENTAGE = 0.2 # Use 20% of the data for testing
+TEST_SET_PERCENTAGE = 0.2
 
 # --- Code ---
 def train_all_models():
-    """Loops through all discovered tickers, trains a model, and saves it."""
+    """Loops through all discovered tickers, trains a model with enhanced features, and saves it."""
     if not TICKERS:
         print("No stock data found to train on. Exiting.")
         return
@@ -33,7 +30,16 @@ def train_all_models():
         os.makedirs(MODELS_DIR)
         print(f"Created directory: {MODELS_DIR}")
 
-    print(f"Found data for {len(TICKERS)} stocks. Starting training process...")
+    print(f"Found data for {len(TICKERS)} stocks. Starting training process with enhanced features...")
+
+    # --- THIS IS THE NEW, EXPANDED LIST OF FEATURES THE MODEL WILL USE ---
+    # We define it once here to ensure consistency.
+    features_list = [
+        'RSI_14', 'MACD_12_26_9', 'MACDh_12_26_9', 'MACDs_12_26_9',
+        'BBL_20_2.0', 'BBM_20_2.0', 'BBU_20_2.0', 'ATRr_14',
+        'STOCHk_14_3_3', 'STOCHd_14_3_3', 'OBV', 'ADX_14', 'WILLR_14',
+        'RSI_change_1d', 'MACD_change_1d'
+    ]
 
     for ticker in TICKERS:
         print(f"--- Training model for {ticker} ---")
@@ -44,11 +50,20 @@ def train_all_models():
             print(f"Data for {ticker} not found, skipping.")
             continue
 
-        # --- FEATURE ENGINEERING ---
+        # --- FEATURE ENGINEERING (EXPANDED) ---
+        # 1. Standard Indicators
         df.ta.rsi(append=True)
         df.ta.macd(append=True)
         df.ta.bbands(length=20, append=True)
         df.ta.atr(append=True)
+        df.ta.stoch(append=True)
+        df.ta.obv(append=True)
+        df.ta.adx(append=True)
+        df.ta.willr(append=True)
+        
+        # 2. Lag/Difference Features
+        df['RSI_change_1d'] = df['RSI_14'].diff()
+        df['MACD_change_1d'] = df['MACD_12_26_9'].diff()
 
         # Define the Target Variable
         df['future_price'] = df['Close'].shift(-TARGET_DAYS_AHEAD)
@@ -58,28 +73,18 @@ def train_all_models():
         # Prepare Data for Model
         df.dropna(inplace=True)
         
-        feature_prefixes = ['RSI', 'MACD', 'BBL', 'BBM', 'BBU', 'ATRr']
-        features = [col for col in df.columns if any(col.startswith(prefix) for prefix in feature_prefixes)]
-        
-        X = df[features]
+        # We now use our predefined features_list
+        X = df[features_list]
         y = df['target']
         
         if len(X) < 50:
             print(f"Not enough data for {ticker} after processing, skipping.")
             continue
 
-        # --- THE FIX: Chronological Time-Series Split ---
-        # Instead of a random split, we split the data by date.
-        # The first (1 - TEST_SET_PERCENTAGE) of data is for training.
-        # The last TEST_SET_PERCENTAGE of data is for testing.
+        # Chronological Time-Series Split
         split_index = int(len(X) * (1 - TEST_SET_PERCENTAGE))
-        
         X_train, X_test = X[:split_index], X[split_index:]
         y_train, y_test = y[:split_index], y[split_index:]
-        # --- End of Fix ---
-        
-        # We removed the old line:
-        # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
         
         model = RandomForestClassifier(n_estimators=100, random_state=42)
         model.fit(X_train, y_train)
@@ -93,7 +98,6 @@ def train_all_models():
         model_path = os.path.join(MODELS_DIR, f"{ticker}_model.pkl")
         joblib.dump(model, model_path, compress=3)
         print(f"Model for {ticker} saved to {model_path}\n")
-
 
 if __name__ == "__main__":
     train_all_models()

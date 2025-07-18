@@ -1,4 +1,4 @@
-# 4_generate_predictions.py (Corrected)
+# 4_generate_predictions.py (UPDATED FOR MORE FEATURES)
 
 import pandas as pd
 import pandas_ta as ta
@@ -7,12 +7,10 @@ import os
 
 def generate_all_predictions():
     """
-    Loads all models, calculates the latest signal for each stock,
-    and saves all predictions to a single CSV file.
+    Loads all models, calculates the latest signal for each stock using
+    enhanced features, and saves all predictions to a single CSV file.
     """
     try:
-        # --- THE FIX IS HERE ---
-        # We find all .pkl files and then properly strip away the '_model.pkl' suffix
         model_files = os.listdir('models')
         tickers = sorted([f.replace('_model.pkl', '') for f in model_files if f.endswith('.pkl')])
     except FileNotFoundError:
@@ -24,9 +22,12 @@ def generate_all_predictions():
         return
 
     all_predictions = []
+    # --- THIS LIST MUST EXACTLY MATCH THE ONE IN 2_model_trainer.py ---
     features_list = [
         'RSI_14', 'MACD_12_26_9', 'MACDh_12_26_9', 'MACDs_12_26_9',
-        'BBL_20_2.0', 'BBM_20_2.0', 'BBU_20_2.0', 'ATRr_14'
+        'BBL_20_2.0', 'BBM_20_2.0', 'BBU_20_2.0', 'ATRr_14',
+        'STOCHk_14_3_3', 'STOCHd_14_3_3', 'OBV', 'ADX_14', 'WILLR_14',
+        'RSI_change_1d', 'MACD_change_1d'
     ]
     
     print(f"Generating predictions for {len(tickers)} stocks...")
@@ -36,7 +37,18 @@ def generate_all_predictions():
             model = joblib.load(f"models/{ticker}_model.pkl")
             df = pd.read_csv(f"stock_data/{ticker}.csv", index_col="Date", parse_dates=True)
 
-            df.ta.rsi(append=True); df.ta.macd(append=True); df.ta.bbands(length=20, append=True); df.ta.atr(append=True)
+            # --- CALCULATE ALL THE SAME FEATURES ---
+            df.ta.rsi(append=True)
+            df.ta.macd(append=True)
+            df.ta.bbands(length=20, append=True)
+            df.ta.atr(append=True)
+            df.ta.stoch(append=True)
+            df.ta.obv(append=True)
+            df.ta.adx(append=True)
+            df.ta.willr(append=True)
+            df['RSI_change_1d'] = df['RSI_14'].diff()
+            df['MACD_change_1d'] = df['MACD_12_26_9'].diff()
+            
             df.dropna(inplace=True)
 
             if df.empty:
@@ -55,7 +67,6 @@ def generate_all_predictions():
             print(f"  {ticker}: {'BUY' if prediction == 1 else 'HOLD/SELL'} ({confidence:.2%})")
 
         except Exception as e:
-            # We print the ticker name correctly now
             print(f"Could not generate prediction for {ticker}: {e}")
 
     # Save to CSV
